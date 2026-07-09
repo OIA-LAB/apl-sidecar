@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+# local demo signing keys — NEVER committed
+keys/
+*.pem
+# local run artifacts
+out/
+.env
