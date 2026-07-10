@@ -64,6 +64,26 @@ def test_no_private_keys_committed():
         assert "PRIVATE" not in text, f"private key material in {f}"
 
 
+def test_demo_public_key_is_git_tracked():
+    """Fresh clones must be able to verify the committed receipts.
+
+    Regression for the external-verifier finding: spec/apl-oss-demo-key.pem
+    existed on the author's disk but was swallowed by the `*.pem` gitignore
+    rule, so a fresh clone could not verify anything. The public key must be
+    TRACKED, and only track public material.
+    """
+    import subprocess
+    out = subprocess.run(["git", "ls-files", "spec/"], cwd=REPO,
+                         capture_output=True, text=True, check=True).stdout
+    tracked = [line.strip() for line in out.splitlines()]
+    assert "spec/apl-oss-demo-key.pem" in tracked, \
+        "repo demo PUBLIC key must be git-tracked for fresh-clone verify"
+    for name in tracked:
+        if name.endswith(".pem"):
+            text = (REPO / name).read_text(encoding="utf-8", errors="replace")
+            assert "PRIVATE" not in text, f"private key material tracked: {name}"
+
+
 def test_playground_has_no_external_origins():
     app = REPO / "app" / "local_playground"
     for f in app.glob("*"):

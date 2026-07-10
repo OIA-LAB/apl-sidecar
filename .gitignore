@@ -4,6 +4,10 @@ __pycache__/
 # local demo signing keys — NEVER committed
 keys/
 *.pem
+# ...but the repo demo PUBLIC verification key must ship with the repo
+# (fresh clones need it to verify the committed receipts; public key only,
+# CI-checked by tests/test_no_deprecated_terms.py)
+!spec/*.pem
 # local run artifacts
 out/
 .env
