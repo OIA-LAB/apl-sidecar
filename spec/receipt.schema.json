@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/oialab/apl-sidecar/spec/receipt.schema.json",
+  "title": "APL Task Egress Receipt v0.1.0-draft",
+  "type": "object",
+  "required": [
+    "run_id", "task_type", "policy_id", "provider_events",
+    "local_only_hashes", "single_provider_exposure",
+    "max_single_provider_exposure", "no_single_provider_saw_full",
+    "prev_receipt_hash", "receipt_hash", "signature", "signing_key_id",
+    "masking_level", "provenance"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "task_type": { "type": "string", "enum": ["private_idea", "private_code_context"] },
+    "policy_id": { "type": "string", "minLength": 1 },
+    "provider_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provider_id", "payload_sha256", "payload_chars",
+                     "response_sha256", "event_type"],
+        "properties": {
+          "provider_id": { "type": "string", "minLength": 1 },
+          "payload_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "payload_chars": { "type": "integer", "minimum": 0 },
+          "response_sha256": {
+            "anyOf": [
+              { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+              { "type": "null" }
+            ]
+          },
+          "event_type": { "type": "string",
+            "enum": ["mock_response", "live_response", "no_response"] }
+        }
+      }
+    },
+    "local_only_hashes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["field", "sha256"],
+        "properties": {
+          "field": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "single_provider_exposure": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provider_id", "exposure_ratio"],
+        "properties": {
+          "provider_id": { "type": "string", "minLength": 1 },
+          "exposure_ratio": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "max_single_provider_exposure": { "type": "number", "minimum": 0, "maximum": 1 },
+    "no_single_provider_saw_full": { "type": "boolean" },
+    "prev_receipt_hash": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "receipt_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "signature": {
+      "type": "object",
+      "required": ["alg", "value"],
+      "properties": {
+        "alg": { "type": "string", "const": "Ed25519" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "signing_key_id": { "type": "string", "minLength": 1 },
+    "masking_level": { "type": "string", "enum": ["guided_curated_p0"] },
+    "provenance": {
+      "type": "object",
+      "required": ["apl_sidecar_version", "receipt_schema_version",
+                   "policy_version", "example_id", "created_at"],
+      "properties": {
+        "apl_sidecar_version": { "type": "string" },
+        "receipt_schema_version": { "type": "string" },
+        "policy_version": { "type": "string" },
+        "example_id": { "type": "string" },
+        "created_at": { "type": "string" }
+      }
+    }
+  }
+}
