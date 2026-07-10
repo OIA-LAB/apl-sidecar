@@ -34,8 +34,16 @@ def _playground(argv: list[str]) -> int:
     if "--port" in argv:
         port = int(argv[argv.index("--port") + 1])
     root = _CLI.parent
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler,
-                                directory=str(root))
+
+    class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
+        """no-store: a stale cached app.js against fresh HTML silently breaks
+        the page (learned the hard way). A local demo never needs caching."""
+
+        def end_headers(self):
+            self.send_header("Cache-Control", "no-store, must-revalidate")
+            super().end_headers()
+
+    handler = functools.partial(NoCacheHandler, directory=str(root))
     server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
     url = f"http://127.0.0.1:{port}/app/local_playground/"
     print(f"APL Sidecar playground: {url}")

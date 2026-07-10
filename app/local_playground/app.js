@@ -319,12 +319,33 @@ async function showVerdict(receipt, tampered) {
   }
 }
 
+/* ---------- friendly failure banner (a trust product must not fail
+ * silently; the classic cause is a stale cached app.js vs fresh HTML) ---- */
+function showErrorBanner(detail) {
+  if ($("#apl-error-banner")) return;
+  const div = document.createElement("div");
+  div.id = "apl-error-banner";
+  div.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99;" +
+    "background:#b3261e;color:#fff;padding:10px 16px;font-size:14px;text-align:center";
+  div.textContent = (LANG === "zh"
+    ? "頁面載入出了問題——請按 Ctrl+F5 強制重新整理（通常是瀏覽器快取了舊版檔案）。"
+    : "Something failed to load — press Ctrl+F5 to hard-refresh " +
+      "(a stale cached file is the usual culprit).") +
+    (detail ? "  [" + detail + "]" : "");
+  document.body.prepend(div);
+}
+window.addEventListener("error", e => showErrorBanner(e.message));
+window.addEventListener("unhandledrejection", e =>
+  showErrorBanner(String(e.reason).slice(0, 120)));
+
 document.querySelectorAll(".choice").forEach(b =>
-  b.addEventListener("click", () => loadExample(b.dataset.ex)));
+  b.addEventListener("click", () => loadExample(b.dataset.ex)
+    .catch(err => showErrorBanner(String(err).slice(0, 120)))));
 $("#run").addEventListener("click", runMock);
 $("#verify-good").addEventListener("click", () => showVerdict(RECEIPT, false));
 $("#verify-bad").addEventListener("click", () => showVerdict(TAMPERED, true));
 
 /* first paint: apply language, never show an empty stage */
 applyLang();
-loadExample("00_private_idea");
+loadExample("00_private_idea").catch(err =>
+  showErrorBanner(String(err).slice(0, 120)));
