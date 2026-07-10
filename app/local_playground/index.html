@@ -7,93 +7,131 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>APL Sidecar</h1>
-  <span class="sub">Local playground — offline, no keys, no network calls</span>
-  <span class="pill">mock mode</span>
-</header>
 
-<nav id="steps"></nav>
+<!-- ======================= ACT 1 — THE PROBLEM ======================= -->
+<section class="hero">
+  <p class="kicker">APL Sidecar · local playground · offline · no keys · no network</p>
+  <h1>Opening a private browser window does not hide what your prompt reveals.</h1>
+  <p class="lead">Paste your whole idea into one AI chatbox and <b>one provider sees
+  100% of it</b>. APL splits the task so <b>no single provider sees the full
+  context</b> — and signs a receipt you can verify.</p>
+
+  <div class="row center">
+    <span class="pick-label">Try it with:</span>
+    <button class="choice" data-ex="00_private_idea">an unannounced startup idea</button>
+    <button class="choice" data-ex="01_private_code_context">a private repo &amp; bug</button>
+    <a class="skip" href="#act3">Skip to the proof ↓</a>
+  </div>
+
+  <div class="compare" id="compare" hidden>
+    <div class="side bad">
+      <h3>Without APL</h3>
+      <p class="side-sub">the usual way: paste everything into one chatbox</p>
+      <div class="meter"><span>one provider sees <b>100%</b> of your task</span>
+        <div class="bar"><i class="fill-bad" style="width:100%"></i></div></div>
+      <p class="consequence" id="bad-consequence"></p>
+    </div>
+    <div class="side good">
+      <h3>With APL</h3>
+      <p class="side-sub">same task, split — sensitive fields never leave</p>
+      <div id="good-meters"></div>
+      <p class="consequence ok-text" id="good-consequence"></p>
+    </div>
+  </div>
+</section>
 
 <main>
-  <section class="card">
-    <h2>Step 1 — Choose example</h2>
-    <div class="row">
-      <button class="choice" data-ex="00_private_idea">Private Idea</button>
-      <button class="choice" data-ex="01_private_code_context">Private Code / Repo Context</button>
+
+<!-- ======================= ACT 2 — HOW ======================= -->
+<section class="act" id="act2" hidden>
+  <h2 class="act-title">How the split works</h2>
+  <p class="act-sub">Five moves, all on your machine. Expand any card for the raw text —
+  or just read the one-line summaries.</p>
+
+  <div class="storyline">
+    <div class="scard" id="c-original">
+      <div class="scard-head"><span class="num">1</span>
+        <div><h3>The full task <span class="tag warn">sensitive</span></h3>
+        <p class="one-liner" id="sum-original"></p></div></div>
+      <details><summary>Show the original input (sensitive parts highlighted)</summary>
+        <pre id="original"></pre></details>
     </div>
-    <p class="hint">All example content is fictional and synthetic.</p>
-  </section>
 
-  <section class="card" id="p-original" hidden>
-    <h2>Step 2 — Original input <span class="tag warn">sensitive</span></h2>
-    <p class="hint">This is what you would normally paste in one go.</p>
-    <pre id="original"></pre>
-  </section>
-
-  <section class="card" id="p-local" hidden>
-    <h2>Step 3 — Local-only fields <span class="tag ok">never leave</span></h2>
-    <p class="hint">Declared in masking_plan.yaml; only hashes enter the receipt.</p>
-    <pre id="localonly"></pre>
-  </section>
-
-  <section class="grid2" id="p-payloads" hidden>
-    <div class="card">
-      <h2>Step 4a — Provider A sees</h2>
-      <pre id="payload-a"></pre>
-      <div class="meter"><span id="exp-a-label"></span>
-        <div class="bar"><i id="exp-a"></i></div></div>
+    <div class="scard" id="c-local">
+      <div class="scard-head"><span class="num">2</span>
+        <div><h3>Sensitive fields go into the local vault
+          <span class="tag ok">never leave</span></h3>
+        <p class="one-liner" id="sum-local"></p></div></div>
+      <div class="vault" id="vault"></div>
+      <details><summary>Show exact local-only values</summary><pre id="localonly"></pre></details>
     </div>
-    <div class="card">
-      <h2>Step 4b — Provider B sees</h2>
-      <pre id="payload-b"></pre>
-      <div class="meter"><span id="exp-b-label"></span>
-        <div class="bar"><i id="exp-b"></i></div></div>
+
+    <div class="scard" id="c-payloads">
+      <div class="scard-head"><span class="num">3</span>
+        <div><h3>Each provider gets only an abstract slice</h3>
+        <p class="one-liner">Two useful, answerable questions — with the secrets gone.</p></div></div>
+      <div class="grid2">
+        <div class="slice"><h4>Provider A sees</h4>
+          <p class="one-liner" id="sum-a"></p>
+          <div class="meter"><span id="exp-a-label"></span>
+            <div class="bar"><i id="exp-a"></i></div></div>
+          <details><summary>Show payload A</summary><pre id="payload-a"></pre></details></div>
+        <div class="slice"><h4>Provider B sees</h4>
+          <p class="one-liner" id="sum-b"></p>
+          <div class="meter"><span id="exp-b-label"></span>
+            <div class="bar"><i id="exp-b"></i></div></div>
+          <details><summary>Show payload B</summary><pre id="payload-b"></pre></details></div>
+      </div>
     </div>
-  </section>
 
-  <section class="card" id="p-run" hidden>
-    <h2>Step 5 — Run mock providers</h2>
-    <button id="run" class="primary">Run mock providers (offline)</button>
-    <div class="grid2" id="answers" hidden>
-      <div><h3>Mock answer A</h3><pre id="answer-a"></pre></div>
-      <div><h3>Mock answer B</h3><pre id="answer-b"></pre></div>
+    <div class="scard" id="c-run">
+      <div class="scard-head"><span class="num">4</span>
+        <div><h3>Providers answer <span class="tag">mock · offline</span></h3>
+        <p class="one-liner">Fixture responses stand in for the models — zero network,
+        zero keys.</p></div></div>
+      <button id="run" class="primary">Run mock providers</button>
+      <div class="grid2" id="answers" hidden>
+        <details open><summary>Mock answer A</summary><pre id="answer-a"></pre></details>
+        <details open><summary>Mock answer B</summary><pre id="answer-b"></pre></details>
+      </div>
     </div>
-  </section>
 
-  <section class="card" id="p-rehydrate" hidden>
-    <h2>Step 6 — Local rehydrate <span class="tag ok">on your machine</span></h2>
-    <pre id="rehydrated"></pre>
-  </section>
+    <div class="scard" id="c-rehydrate" hidden>
+      <div class="scard-head"><span class="num">5</span>
+        <div><h3>Your machine reassembles the real answer
+          <span class="tag ok">local rehydrate</span></h3>
+        <p class="one-liner">The generic advice + your vault = a full plan no provider
+        ever saw.</p></div></div>
+      <details><summary>Show the rehydrated answer</summary><pre id="rehydrated"></pre></details>
+    </div>
+  </div>
+</section>
 
-  <section class="card" id="p-exposure" hidden>
-    <h2>Step 7 — Inspect exposure</h2>
-    <div id="exposure"></div>
-    <p class="big" id="sawfull"></p>
-  </section>
+<!-- ======================= ACT 3 — THE PROOF ======================= -->
+<section class="act" id="act3" hidden>
+  <h2 class="act-title">Why believe any of this?</h2>
+  <p class="act-sub">Because every run signs a receipt: who saw what, how much,
+  fingerprints of what stayed local — Ed25519-signed. Verification below runs
+  <b>live in your browser</b> (WebCrypto). It is math, not an animation.</p>
 
-  <section class="card" id="p-receipt" hidden>
-    <h2>Step 8 — Signed receipt</h2>
+  <div class="proof">
+    <div class="proof-btns">
+      <button id="verify-good" class="primary big-btn">Verify the receipt</button>
+      <button id="verify-bad" class="danger big-btn">Verify a TAMPERED copy</button>
+    </div>
+    <div id="verdict-card" class="verdict-card" hidden></div>
+    <p class="hint">The tampered copy differs by <b>one number</b>. That is enough.</p>
     <div class="kv" id="receiptmeta"></div>
     <details><summary>Full receipt JSON</summary><pre id="receipt"></pre></details>
-  </section>
+  </div>
+</section>
 
-  <section class="card" id="p-verify" hidden>
-    <h2>Step 9 — Verify</h2>
-    <div class="row">
-      <button id="verify-good" class="primary">Verify receipt</button>
-      <button id="verify-bad">Verify TAMPERED receipt</button>
-    </div>
-    <p class="big" id="verdict"></p>
-    <p class="hint">Verification recomputes the canonical hash and checks the
-      Ed25519 signature in your browser (WebCrypto). Change one byte and it fails.</p>
-  </section>
-
-  <footer>
-    P0 uses user-guided masking and curated provider payloads. Automatic
-    semantic decomposition is not a P0 claim. APL shows what left local —
-    it does not claim zero leakage or provider non-retention.
-  </footer>
+<footer>
+  All example content is fictional. P0 uses user-guided masking and curated
+  provider payloads — automatic semantic decomposition is a roadmap item, not
+  a P0 claim. APL shows <b>what left local</b>; it does not claim zero leakage,
+  provider non-retention, or anonymity.
+</footer>
 </main>
 <script src="app.js"></script>
 </body>
