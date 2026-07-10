@@ -1,0 +1,9 @@
+Task: improve the API section of a README for a Python service library
+(project internals intentionally withheld).
+
+The current API docs are unstructured and external integrators keep asking
+basic questions. Please suggest:
+- a section layout for documenting a service-style Python API;
+- how to present request/response examples so integrators stop guessing;
+- a clearer way to describe interfaces and error behavior;
+- where to put a warnings/limitations subsection so people actually read it.

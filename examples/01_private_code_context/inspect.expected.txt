@@ -1,0 +1,35 @@
+================================================================
+APL INSPECT -- examples\01_private_code_context\receipt.json
+================================================================
+run_id:        01KX59SR04SNWG9TC0RR6GTAHH
+task_type:     private_code_context
+policy_id:     apl-oss-demo-policy
+masking_level: guided_curated_p0
+
+-- PROVIDER EXPOSURE -----------------------------------------
+  mock_provider_a: 34.6%
+  mock_provider_b: 32.7%
+  max_single_provider_exposure: 34.6%
+  max allowed by policy:        35.0%
+  no_single_provider_saw_full:  True
+
+-- LOCAL-ONLY ------------------------------------------------
+  7 fields stayed local (only fingerprints entered the receipt):
+    customer_names: sha256:b5e2e3e37f620b21...
+    file_tree: sha256:7f5b1294d82be877...
+    internal_architecture_notes: sha256:ad4d2973f230c1c1...
+    product_direction: sha256:a8fdb2d44b9dde75...
+    repo_name: sha256:7aedb978e89d5a3b...
+    roadmap: sha256:ac8c2eb0ebf3e95c...
+    secret_like_values: sha256:d7942587c721470b...
+
+-- PROVENANCE ------------------------------------------------
+  apl_sidecar_version: 0.1.0-draft
+  created_at: 2026-07-10T06:00:22Z
+  example_id: 01_private_code_context
+  policy_version: 0.1.0-draft
+  receipt_schema_version: 0.1.0-draft
+
+  prev_receipt_hash: None
+  receipt_hash:      270f72427e4b7a6639a49e8305bd95ea92a7c2b2cc72c553078d0414ab117ba6
+  signing_key_id:    apl-oss-demo-key

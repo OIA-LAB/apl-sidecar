@@ -1,0 +1,16 @@
+Minimal bug reproduction (Python). This function raises at runtime:
+
+    def flush_batch(self, events):
+        grouped = {}
+        for e in events:
+            grouped.setdefault(e.entity_id, []).append(e)
+        for entity_id, evs in grouped.items():
+            self._apply(entity_id, sorted(evs, key=lambda e: e.ts))
+            del grouped[entity_id]
+
+Error:
+
+    RuntimeError: dictionary changed size during iteration
+
+Please explain the likely cause, propose a fix, and suggest a unit test
+that would have caught it.

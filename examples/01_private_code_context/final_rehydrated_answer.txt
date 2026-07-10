@@ -1,0 +1,26 @@
+[LOCAL REHYDRATION — produced on the user's machine by combining the two
+mock answers with the local repo context. No provider saw this document.]
+
+hearthgrid-core fixes (rehydrated locally):
+
+1. sync/delta_stream.py — apply provider A's fix option 2 (snapshot
+   iteration with pop): flush_batch handles huge partner sync batches, so
+   eager memory release matters for the Nortia Systems pilot volumes.
+   Add A's suggested multi-entity unit test to tests/ as
+   test_delta_stream_flush.py; note the single-entity blind spot in the
+   test docstring.
+
+2. Secret hygiene flag raised while preparing this task: settings.py
+   commits a default HEARTHGRID_API_KEY. Rotate the example key and make
+   the loader fail hard when the env var is missing. (This never left the
+   machine — provider A saw only the snippet and the error.)
+
+3. README API section — apply provider B's template to the public
+   operations of billing/invoice_engine and sync/delta_stream. Keep
+   partners/nortia_adapter.py and the conflict_resolver tombstone-grace
+   strategy OUT of the public docs: the roadmap (ship before Veyra Labs,
+   Q4 pilot expansion) and the differentiator description stay internal.
+
+What each provider actually saw: a 10-line snippet with an error (A) and a
+generic documentation task (B). Neither saw the repo name, the tree, the
+committed key, the customer, or the roadmap.

@@ -1,0 +1,26 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+README structure for a privacy-sensitive developer tool:
+
+1. Headline: one problem sentence, no adjectives.
+   Pattern: "<Common action> does not <what users assume it does>."
+
+2. Section order for a skeptical developer:
+   - the one-line problem;
+   - a 10-line "how it works" diagram;
+   - Quick start (copy-paste commands, no signup, no keys);
+   - a verifiable claim the reader can test in 60 seconds;
+   - What this tool does NOT claim  <- put this ABOVE the feature list;
+   - features / modes table;
+   - enterprise or advanced use, last.
+
+3. Not-claims placement: directly after the quick start. A reader who just
+   ran your demo is exactly the reader who will respect honest limits.
+
+4. Call-to-action structure: primary CTA = run the demo locally; secondary
+   CTA = read the standard/spec; tertiary CTA = open an issue. No email
+   capture, no login wall anywhere.
+
+5. Docs flow for verifiability-minded users: README -> a short standard
+   document (what exactly is recorded and signed) -> conformance fixtures
+   the reader can verify and tamper with -> contribution guide.

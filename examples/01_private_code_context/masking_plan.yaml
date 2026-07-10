@@ -1,0 +1,21 @@
+# APL masking plan — guided_curated_p0 (user-declared, not auto-detected)
+task_type: private_code_context
+
+local_only_fields:
+  - repo_name
+  - file_tree
+  - secret_like_values
+  - customer_names
+  - roadmap
+  - internal_architecture_notes
+  - product_direction
+
+preserved_task_signals:
+  - a minimal reproducible bug (snippet + error only)
+  - the documentation task shape (API README improvement)
+  - language/runtime (Python)
+  - quality criteria (correct fix + test; clearer API docs)
+
+payload_routing:
+  mock_provider_a: minimal bug reproduction (snippet + error, nothing else)
+  mock_provider_b: README / API documentation improvement task

@@ -1,0 +1,35 @@
+[FICTIONAL EXAMPLE — every name, number, and plan below is invented.]
+
+Project "Quietloom" — founder working notes, not announced anywhere.
+
+Concept: a browser extension + local daemon that watches what a developer
+pastes into AI chatboxes and, before send, splits the paste into a shareable
+skeleton and a private remainder that never leaves the machine. The private
+remainder is re-merged into the AI answer locally.
+
+Target user: solo developers and 2-5 person startups who already pay for one
+AI subscription and are paranoid about their unlaunched product ideas.
+
+Pain point: they self-censor when asking AI for help on their real work, so
+they get generic answers, or they paste everything and feel sick afterwards.
+
+Unique mechanism: the "loom split" — a deterministic template that keeps the
+question structure intact while swapping named entities and differentiators
+for typed placeholders, plus a signed local receipt of what actually left.
+
+Go-to-market: launch on GitHub as an open-source local tool, then convert
+teams via a paid policy pack for founders' private repos. First 100 users
+from the IndieHackers "building in public (quietly)" thread.
+
+Pricing idea: free local tool; USD 9/month per seat for the team policy pack;
+USD 490/year founder bundle with priority masking templates.
+
+Early customer segment: indie SaaS founders pre-launch; especially those in
+competitive niches (AI writing tools, dev productivity).
+
+Moat / differentiation: the receipt. Competitors do redaction; nobody gives
+the user a verifiable, signed record of what left the machine. That record
+becomes the trust layer a team can audit later.
+
+Founder note: do NOT mention the Quietloom name or the loom-split mechanism
+in any public prompt until the provisional filing is drafted.

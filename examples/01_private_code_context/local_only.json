@@ -1,0 +1,9 @@
+{
+  "repo_name": "hearthgrid-core",
+  "file_tree": "billing/(invoice_engine, proration), sync/(delta_stream, conflict_resolver), partners/(nortia_adapter), config/settings, tests/",
+  "secret_like_values": "HEARTHGRID_API_KEY = hg_live_EXAMPLEKEY_DO_NOT_USE_0000 (committed default in settings.py)",
+  "customer_names": "Nortia Systems pilot (partners/nortia_adapter.py)",
+  "roadmap": "Q3 ship offline-first conflict engine before Veyra Labs; Q4 expand Nortia Systems pilot to 3 sites",
+  "internal_architecture_notes": "last-writer-wins with tombstone grace window in conflict_resolver - believed differentiator for offline-first sync",
+  "product_direction": "offline-first sync as the wedge; partner adapters as expansion"
+}

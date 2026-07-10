@@ -1,0 +1,27 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+Positioning an early privacy-adjacent developer tool for GitHub users:
+
+1. Market framing. Lead with the failure mode, not the feature: developers
+   already self-censor or over-share when asking AI for help. Name that
+   tension in one sentence on the first screen. Avoid the word "secure" as
+   an adjective; show a mechanism instead.
+
+2. Adoption risks and how to defuse them:
+   - "Yet another privacy tool" fatigue -> ship something runnable in under
+     two minutes with zero signup;
+   - trust paradox (a privacy tool asking for trust) -> make every claim
+     verifiable from the repo itself: tests, fixtures, a verify command;
+   - overclaiming -> publish an explicit not-claims document; developers
+     reward honesty about limits;
+   - abandonment fear -> a visible roadmap and small, frequent commits.
+
+3. Trust signals that matter most, in order: a runnable demo without keys;
+   a test suite that a stranger can run; documentation that admits limits;
+   reproducible artifacts (signed receipts help here); no hidden network
+   calls (make it easy to prove with a proxy).
+
+4. Launch sequence, first 90 days: weeks 1-2 quiet launch to a niche
+   community; weeks 3-6 respond to every issue same-day, publish a
+   "how verification works" walkthrough; weeks 7-12 one integration guide
+   for the most common workflow, then a v0.2 with the most-requested fix.

@@ -1,0 +1,30 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+Likely cause: you are deleting keys from `grouped` while iterating over
+`grouped.items()`. In Python 3, mutating a dict during iteration raises
+`RuntimeError: dictionary changed size during iteration`.
+
+Fix options (pick one):
+
+1. Don't delete at all — the dict is local and dies with the function:
+
+       for entity_id, evs in grouped.items():
+           self._apply(entity_id, sorted(evs, key=lambda e: e.ts))
+
+2. If you must release memory eagerly on huge batches, iterate a snapshot:
+
+       for entity_id in list(grouped):
+           evs = grouped.pop(entity_id)
+           self._apply(entity_id, sorted(evs, key=lambda e: e.ts))
+
+Suggested unit test that would have caught it:
+
+    def test_flush_batch_multiple_entities():
+        events = [Ev("a", 2), Ev("b", 1), Ev("a", 1)]
+        fb = FlushBatcher(applied := [])
+        fb.flush_batch(events)          # must not raise
+        assert applied == [("a", [1, 2]), ("b", [1])]  # per-entity, ts-sorted
+
+The single-entity case never triggers the bug (the loop ends after one
+deletion), which is why it slipped through — always test the >= 2 entity
+path for batch code.

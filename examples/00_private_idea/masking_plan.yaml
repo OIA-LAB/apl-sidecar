@@ -1,0 +1,24 @@
+# APL masking plan — guided_curated_p0 (user-declared, not auto-detected)
+task_type: private_idea
+
+# fields whose VALUES must never appear in any provider payload
+local_only_fields:
+  - project_name
+  - unique_mechanism
+  - target_market
+  - pricing
+  - gtm_detail
+  - moat
+  - founder_notes
+
+# abstract task signals deliberately PRESERVED so answers stay useful
+preserved_task_signals:
+  - task type (position an early developer tool)
+  - audience class (GitHub users / developers)
+  - product category (privacy-sensitive developer tool)
+  - desired outputs (positioning advice, README structure)
+  - quality criteria (earn trust, low-friction adoption)
+
+payload_routing:
+  mock_provider_a: generalized positioning / adoption question
+  mock_provider_b: README / landing-page structure task

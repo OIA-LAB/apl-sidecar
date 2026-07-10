@@ -1,0 +1,24 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+API README structure for a service-style Python library:
+
+1. Section layout:
+   - Overview: one paragraph, what the service does and does not do;
+   - Quick reference table: operation / method signature / returns / raises;
+   - Per-operation subsections, each with the SAME template:
+     purpose -> minimal example -> parameters -> return shape -> errors;
+   - Warnings & limitations;
+   - Versioning and stability notes.
+
+2. Request/response examples: always paired and runnable. Show the exact
+   input and the exact output as fenced blocks, never prose descriptions of
+   payloads. One happy path plus one representative error per operation.
+
+3. Interfaces and error behavior: document errors as a table
+   (condition -> exception/status -> caller action). State explicitly which
+   operations are idempotent and what happens on retry.
+
+4. Warnings/limitations placement: as a subsection INSIDE the quick
+   reference (a short line per operation) plus one consolidated section
+   before versioning. Integrators read tables, not appendices — put the
+   sharp edges where their eyes already are.

@@ -1,0 +1,74 @@
+{
+  "local_only_hashes": [
+    {
+      "field": "founder_notes",
+      "sha256": "d2034d770604def3ce47e3f0a9c33ac2f2b400357e6cbc049630e13ea6b2114d"
+    },
+    {
+      "field": "gtm_detail",
+      "sha256": "60da9f3915e8baa13623b1198e758641111c3c7bd19c876efa6ea8731636802e"
+    },
+    {
+      "field": "moat",
+      "sha256": "4f590752762e051efd0587663eca0890f905448bf4bd85f59d49e93aaee8fe35"
+    },
+    {
+      "field": "pricing",
+      "sha256": "011808e4a2ca969a530c6644390591efce1c491e655f4476a74d6ca403138149"
+    },
+    {
+      "field": "project_name",
+      "sha256": "e4e1e85582e9c7524f0099d1b8f9513f85b6e275b02d046a41a8d1c693def5fb"
+    },
+    {
+      "field": "target_market",
+      "sha256": "6ed827390a9c93b1bb6a1c69469d6c93888f778ffd4935fa389d7a82ff74f80c"
+    },
+    {
+      "field": "unique_mechanism",
+      "sha256": "099df6c06977af6dd5c5591ecc14561608ad295f7987fc0ded7adc3f5cb2c0ab"
+    }
+  ],
+  "masking_level": "guided_curated_p0",
+  "max_single_provider_exposure": 0.311725,
+  "no_single_provider_saw_full": true,
+  "policy_id": "apl-oss-demo-policy",
+  "prev_receipt_hash": null,
+  "provenance": {
+    "apl_sidecar_version": "0.1.0-draft",
+    "created_at": "2026-07-10T06:00:22Z",
+    "example_id": "00_private_idea",
+    "policy_version": "0.1.0-draft",
+    "receipt_schema_version": "0.1.0-draft"
+  },
+  "provider_events": [
+    {
+      "event_type": "mock_response",
+      "payload_chars": 553,
+      "payload_sha256": "0bb62c1a4789432f58324c142a3e0bf6b1aac09152c4493c41eb7b39a8d862a7",
+      "provider_id": "mock_provider_a",
+      "response_sha256": "b87d58dca7611cee9ed5d36872dcd684c1cd435aa1a856894b80b2a56a57b4f0"
+    },
+    {
+      "event_type": "mock_response",
+      "payload_chars": 485,
+      "payload_sha256": "e76e91405eeaac10eb4a09f52fe9bad8147c5081dd150bd8a3196ce5519c381b",
+      "provider_id": "mock_provider_b",
+      "response_sha256": "5963e75654324a2171fdac8434a5e4afd78692254570d2aec12a2ded48a60033"
+    }
+  ],
+  "receipt_hash": "6f83311a112d2b22afec3abc4562834a1cd5b543d52c8ea0f9e486836005265c",
+  "run_id": "01KX59SR0538AGQEY15RVZ0RBG",
+  "signing_key_id": "apl-oss-demo-key",
+  "single_provider_exposure": [
+    {
+      "exposure_ratio": 0.311725,
+      "provider_id": "mock_provider_a"
+    },
+    {
+      "exposure_ratio": 0.273393,
+      "provider_id": "mock_provider_b"
+    }
+  ],
+  "task_type": "private_idea"
+}

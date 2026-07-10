@@ -1,0 +1,34 @@
+[LOCAL REHYDRATION — produced on the user's machine by combining the two
+mock answers with the local-only context. No provider saw this document.]
+
+Quietloom launch plan (rehydrated locally):
+
+Positioning (from provider A's framing + local specifics):
+- First-screen line: "Pasting your unlaunched idea into an AI chatbox is a
+  disclosure. Quietloom splits the paste so it isn't."
+- The loom-split mechanism stays undisclosed until the provisional filing
+  is drafted (founder note honored — that constraint never left this
+  machine).
+- Trust strategy per A: every claim verifiable from the repo — which is
+  exactly the moat: competitors redact, Quietloom leaves a signed receipt.
+
+README skeleton (from provider B's structure + local specifics):
+1. "Pasting into an AI chatbox is a disclosure." (headline pattern applied)
+2. How it works: skeleton out / remainder local / receipt signed.
+3. Quick start: free local tool, no signup — matches the pricing plan
+   (free core; USD 9/seat team policy pack; USD 490/yr founder bundle
+   introduced only at the paid-pack section, last).
+4. Verifiable claim in 60 seconds: tamper a receipt, watch verify fail.
+5. Not-claims section above features, per B.
+
+GTM sequencing (A's 90-day arc mapped to the local plan):
+- Weeks 1-2: quiet GitHub launch; seed the IndieHackers
+  "building in public (quietly)" thread — the exact first-100-users channel
+  stays local; providers only saw "niche community".
+- Weeks 3-6: same-day issue responses + "how verification works" post.
+- Weeks 7-12: one integration guide targeting pre-launch indie SaaS
+  founders in competitive niches (target market detail reintroduced here).
+
+What each provider actually saw: a generic positioning question (A) and a
+README structure task (B). Neither saw the name, the mechanism, the pricing,
+the channel, or the filing constraint.
