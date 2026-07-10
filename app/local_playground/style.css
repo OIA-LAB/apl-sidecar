@@ -1,0 +1,43 @@
+:root { --ink:#161f2a; --mut:#5b6b7b; --line:#dbe3ec; --bg:#f3f6fa;
+        --ok:#0d7a4d; --bad:#b3261e; --accent:#1d4ed8; }
+* { box-sizing:border-box; }
+body { margin:0; font:15px/1.55 "Segoe UI",system-ui,sans-serif;
+       color:var(--ink); background:var(--bg); }
+header { background:var(--ink); color:#fff; padding:16px 26px;
+         display:flex; gap:14px; align-items:baseline; flex-wrap:wrap; }
+header h1 { margin:0; font-size:19px; }
+header .sub { color:#9db1c5; font-size:13px; }
+header .pill { margin-left:auto; font-size:12px; padding:3px 12px;
+               border-radius:99px; background:#2c3d50; color:#cfe1f3; }
+nav { max-width:1040px; margin:14px auto 0; padding:0 18px;
+      color:var(--mut); font-size:12.5px; }
+main { max-width:1040px; margin:10px auto 30px; padding:0 18px;
+       display:flex; flex-direction:column; gap:16px; }
+.card { background:#fff; border:1px solid var(--line); border-radius:10px;
+        padding:16px 20px; }
+.card h2 { margin:0 0 8px; font-size:15px; }
+.card h3 { margin:8px 0 4px; font-size:13.5px; }
+.hint { color:var(--mut); font-size:12.5px; margin:4px 0 10px; }
+.big { font-size:16px; font-weight:600; }
+.row { display:flex; gap:10px; flex-wrap:wrap; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.grid2 .card { margin:0; }
+pre { background:#0f1723; color:#d9e4f1; border-radius:8px; padding:12px;
+      font-size:12px; overflow:auto; max-height:300px; white-space:pre-wrap; }
+button { font:inherit; padding:8px 16px; border-radius:8px; cursor:pointer;
+         border:1px solid var(--line); background:#fff; }
+button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+button.choice.sel { outline:3px solid var(--accent); }
+.tag { font-size:11px; padding:2px 8px; border-radius:99px; vertical-align:middle; }
+.tag.ok { background:#e2f3ea; color:var(--ok); }
+.tag.warn { background:#fdecea; color:var(--bad); }
+.meter { margin-top:8px; font-size:12px; color:var(--mut); }
+.bar { height:10px; border-radius:6px; background:#e8edf4; overflow:hidden; }
+.bar i { display:block; height:100%; background:var(--accent); width:0; }
+.kv { font-size:12.5px; font-family:Consolas,monospace; }
+.kv div { padding:2px 0; word-break:break-all; }
+.verdict-ok { color:var(--ok); }
+.verdict-bad { color:var(--bad); }
+footer { color:var(--mut); font-size:11.5px; border-top:1px solid var(--line);
+         padding-top:12px; }
+@media (max-width:760px){ .grid2{grid-template-columns:1fr;} }

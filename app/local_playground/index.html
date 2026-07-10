@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APL Sidecar — Local Playground</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>APL Sidecar</h1>
+  <span class="sub">Local playground — offline, no keys, no network calls</span>
+  <span class="pill">mock mode</span>
+</header>
+
+<nav id="steps"></nav>
+
+<main>
+  <section class="card">
+    <h2>Step 1 — Choose example</h2>
+    <div class="row">
+      <button class="choice" data-ex="00_private_idea">Private Idea</button>
+      <button class="choice" data-ex="01_private_code_context">Private Code / Repo Context</button>
+    </div>
+    <p class="hint">All example content is fictional and synthetic.</p>
+  </section>
+
+  <section class="card" id="p-original" hidden>
+    <h2>Step 2 — Original input <span class="tag warn">sensitive</span></h2>
+    <p class="hint">This is what you would normally paste in one go.</p>
+    <pre id="original"></pre>
+  </section>
+
+  <section class="card" id="p-local" hidden>
+    <h2>Step 3 — Local-only fields <span class="tag ok">never leave</span></h2>
+    <p class="hint">Declared in masking_plan.yaml; only hashes enter the receipt.</p>
+    <pre id="localonly"></pre>
+  </section>
+
+  <section class="grid2" id="p-payloads" hidden>
+    <div class="card">
+      <h2>Step 4a — Provider A sees</h2>
+      <pre id="payload-a"></pre>
+      <div class="meter"><span id="exp-a-label"></span>
+        <div class="bar"><i id="exp-a"></i></div></div>
+    </div>
+    <div class="card">
+      <h2>Step 4b — Provider B sees</h2>
+      <pre id="payload-b"></pre>
+      <div class="meter"><span id="exp-b-label"></span>
+        <div class="bar"><i id="exp-b"></i></div></div>
+    </div>
+  </section>
+
+  <section class="card" id="p-run" hidden>
+    <h2>Step 5 — Run mock providers</h2>
+    <button id="run" class="primary">Run mock providers (offline)</button>
+    <div class="grid2" id="answers" hidden>
+      <div><h3>Mock answer A</h3><pre id="answer-a"></pre></div>
+      <div><h3>Mock answer B</h3><pre id="answer-b"></pre></div>
+    </div>
+  </section>
+
+  <section class="card" id="p-rehydrate" hidden>
+    <h2>Step 6 — Local rehydrate <span class="tag ok">on your machine</span></h2>
+    <pre id="rehydrated"></pre>
+  </section>
+
+  <section class="card" id="p-exposure" hidden>
+    <h2>Step 7 — Inspect exposure</h2>
+    <div id="exposure"></div>
+    <p class="big" id="sawfull"></p>
+  </section>
+
+  <section class="card" id="p-receipt" hidden>
+    <h2>Step 8 — Signed receipt</h2>
+    <div class="kv" id="receiptmeta"></div>
+    <details><summary>Full receipt JSON</summary><pre id="receipt"></pre></details>
+  </section>
+
+  <section class="card" id="p-verify" hidden>
+    <h2>Step 9 — Verify</h2>
+    <div class="row">
+      <button id="verify-good" class="primary">Verify receipt</button>
+      <button id="verify-bad">Verify TAMPERED receipt</button>
+    </div>
+    <p class="big" id="verdict"></p>
+    <p class="hint">Verification recomputes the canonical hash and checks the
+      Ed25519 signature in your browser (WebCrypto). Change one byte and it fails.</p>
+  </section>
+
+  <footer>
+    P0 uses user-guided masking and curated provider payloads. Automatic
+    semantic decomposition is not a P0 claim. APL shows what left local —
+    it does not claim zero leakage or provider non-retention.
+  </footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

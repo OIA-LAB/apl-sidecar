@@ -50,8 +50,10 @@ PRIVATE_KEY
 
 - [ ] No private repo paths.
 - [ ] No internal machine paths (e.g. drive letters, user home dirs).
-- [ ] `grep -R "no_single_cloud" .` returns 0 matches
-      (canonical term is `no_single_provider_saw_full`).
+- [ ] Deprecated-vocabulary gate passes:
+      `python -m pytest tests/test_no_deprecated_terms.py -q`
+      (the legacy no-single-cloud underscore term must not appear anywhere;
+      canonical term is `no_single_provider_saw_full`).
 
 ## Network posture
 

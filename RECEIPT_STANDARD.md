@@ -57,8 +57,8 @@ Field notes:
 - `single_provider_exposure[].exposure_ratio` —
   `characters_sent_to_provider / characters_in_original_input`.
 - `no_single_provider_saw_full` — true iff no provider payload equals the
-  full original input (canonical term; the deprecated `no_single_cloud` family
-  must not appear anywhere).
+  full original input (canonical term; the legacy no-single-cloud underscore vocabulary
+  must not appear anywhere -- CI-gated).
 - `prev_receipt_hash` — previous receipt's `receipt_hash` (hex) or `null` for
   the first receipt of a chain.
 - `masking_level` — see docs/masking_levels.md; P0 emits `guided_curated_p0`.
@@ -97,7 +97,8 @@ then verifies the Ed25519 signature with the public key identified by
 `signing_key_id`.
 
 Private keys are never committed. Conformance vectors ship with a **public**
-verification key only (`spec/demo_public_key.pem`).
+verification key only (`spec/apl-oss-demo-key.pem`; keys are resolved by
+`signing_key_id` as `keys/<id>.pem` then `spec/<id>.pem`).
 
 ## 4. Chain rule
 
