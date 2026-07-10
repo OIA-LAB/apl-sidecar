@@ -2,29 +2,153 @@
 /* APL Sidecar local playground — offline; loads example fixtures from this
  * repo via the local server started by `python cli/apl.py playground`.
  * Three-act narrative: problem -> mechanism -> proof.
+ * Bilingual: default English, `?lang=zh` for Traditional Chinese (UI chrome
+ * only — the example fixtures themselves are English evidence artifacts).
  * Verification is REAL: canonical hash + Ed25519 via WebCrypto. */
 
 const $ = s => document.querySelector(s);
 const BASE = "../../";
+const LANG = new URLSearchParams(location.search).get("lang") === "zh" ? "zh" : "en";
 let EX = null, RECEIPT = null, TAMPERED = null;
 
-const STORY = {
-  "00_private_idea": {
-    bad: "The provider now holds your product name, mechanism, pricing, " +
-         "go-to-market channel, and your do-not-disclose note. In one paste.",
-    sumOriginal: "A founder's full working notes for an unannounced startup idea.",
-    sumA: "A generic positioning question — no name, no differentiator, no pricing.",
-    sumB: "A README-structure task — no idea, no business model.",
+/* ------------------------------- i18n ------------------------------- */
+const I18N = {
+  en: {
+    // dynamic strings only — English static text lives in the HTML
+    verifying: "verifying in your browser...",
+    verdictOk: "✓ Signature verified. Receipt chain valid.",
+    verdictOkSub: "Recomputed the canonical hash and checked the Ed25519 " +
+                  "signature with WebCrypto — locally, just now.",
+    verdictFail: "✗ Verification failed: receipt was modified or signature is invalid.",
+    tamperNote: " — this copy differs from the real receipt by one number.",
+    ofOriginal: p => `<b>${p}</b> of the original`,
+    sees: (name, p) => `${name} sees <b>${p}</b>`,
+    goodConsequence: (worst, n) =>
+      `Worst single provider: ${worst} of the characters — and none of the ` +
+      `${n} sensitive fields. No single provider saw the full task context.`,
+    sumLocal: n => `${n} fields — only their SHA-256 fingerprints enter the receipt.`,
+    chars: n => ` (${n.toLocaleString()} characters)`,
+    fieldsOnly: n => `${n} (fingerprints only)`,
   },
-  "01_private_code_context": {
-    bad: "The provider now holds your repo tree, a committed API key, a " +
-         "customer name, and your competitive roadmap. In one paste.",
-    sumOriginal: "Full repo working context: tree, code, an embedded key, " +
-                 "customer and roadmap notes.",
-    sumA: "A minimal bug repro — a 10-line snippet and one error, nothing else.",
-    sumB: "A generic API-documentation task — no codebase, no internals.",
+  zh: {
+    kicker: "APL Sidecar · 本機遊樂場 · 離線 · 免金鑰 · 零網路",
+    hook: "開無痕視窗，藏不住你的 prompt 洩漏了什麼。",
+    lead: "把整包點子貼進一個 AI 對話框，<b>那家供應商就看到了 100%</b>。" +
+          "APL 把任務切開，<b>沒有任何一家看得到全貌</b>——並簽發一張可驗證的收據。",
+    tryWith: "選個場景試：",
+    ex00: "未發表的創業點子",
+    ex01: "私有 repo 與 bug",
+    skip: "直接跳到證明 ↓",
+    withoutTitle: "不用 APL",
+    withoutSub: "平常的做法：整包貼進同一個對話框",
+    withoutMeter: "單一供應商看到你任務的 <b>100%</b>",
+    withTitle: "用 APL",
+    withSub: "同一個任務，切分後——機密欄位不出機器",
+    act2Title: "切分是怎麼發生的",
+    act2Sub: "五步，全在你的機器上。想看原文就展開卡片，不想看讀一行摘要就夠。",
+    c1Title: "完整任務",
+    tagSensitive: "敏感",
+    c1Details: "顯示原始輸入（機密部分已標紅）",
+    c2Title: "機密欄位進本機保險箱",
+    tagNever: "永不出境",
+    c2Details: "顯示 local-only 欄位原值",
+    c3Title: "每家供應商只拿到一片抽象切片",
+    c3Line: "兩個有用、答得出來的問題——但機密已經抽掉。",
+    aSees: "供應商 A 看到",
+    bSees: "供應商 B 看到",
+    aDetails: "顯示 payload A",
+    bDetails: "顯示 payload B",
+    c4Title: "供應商作答",
+    tagMock: "mock · 離線",
+    c4Line: "以 fixture 回應代替真模型——零網路、零金鑰。",
+    runBtn: "執行 mock providers",
+    ansA: "Mock 回答 A",
+    ansB: "Mock 回答 B",
+    c5Title: "你的機器把真正的答案拼回來",
+    tagRehydrate: "本機重組",
+    c5Line: "泛用建議＋你的保險箱＝一份沒有任何供應商看過的完整方案。",
+    c5Details: "顯示重組後的完整答案",
+    act3Title: "憑什麼相信這些？",
+    act3Sub: "因為每次執行都簽發收據：誰看了什麼、看了多少、留在本機的欄位指紋——" +
+             "Ed25519 簽章。下面的驗證<b>就在你的瀏覽器裡現場計算</b>（WebCrypto）。" +
+             "這是數學，不是動畫。",
+    btnGood: "驗證收據",
+    btnBad: "驗證「被竄改」的副本",
+    hint: "被竄改的副本只差<b>一個數字</b>。這就夠了。",
+    receiptDetails: "完整收據 JSON",
+    footer: "所有範例內容皆為虛構（範例本文為英文證物，不翻譯）。P0 採用人工引導遮罩與" +
+            "策展 payload——自動語意切分是 roadmap 項目，不是 P0 宣稱。APL 呈現的是" +
+            "<b>什麼離開了本機</b>；不宣稱零洩漏、不宣稱供應商不留存、不宣稱匿名。",
+    verifying: "正在你的瀏覽器裡驗證…",
+    verdictOk: "✓ 簽章驗證通過。收據鏈有效。",
+    verdictOkSub: "剛剛在本機用 WebCrypto 重算 canonical hash 並驗 Ed25519 簽章。",
+    verdictFail: "✗ 驗證失敗：收據已被修改或簽章無效。",
+    tamperNote: "——這份副本與真收據只差一個數字。",
+    ofOriginal: p => `原文的 <b>${p}</b>`,
+    sees: (name, p) => `${name} 看到 <b>${p}</b>`,
+    goodConsequence: (worst, n) =>
+      `最壞的單一供應商也只拿到 ${worst} 的字元——而且 ${n} 個機密欄位一個都沒拿到。` +
+      `沒有任何一家看到完整任務。`,
+    sumLocal: n => `${n} 個欄位——收據裡只有它們的 SHA-256 指紋。`,
+    chars: n => `（${n.toLocaleString()} 字元）`,
+    fieldsOnly: n => `${n}（僅指紋）`,
   },
 };
+const T = I18N[LANG];
+
+const STORY = {
+  en: {
+    "00_private_idea": {
+      bad: "The provider now holds your product name, mechanism, pricing, " +
+           "go-to-market channel, and your do-not-disclose note. In one paste.",
+      sumOriginal: "A founder's full working notes for an unannounced startup idea.",
+      sumA: "A generic positioning question — no name, no differentiator, no pricing.",
+      sumB: "A README-structure task — no idea, no business model.",
+    },
+    "01_private_code_context": {
+      bad: "The provider now holds your repo tree, a committed API key, a " +
+           "customer name, and your competitive roadmap. In one paste.",
+      sumOriginal: "Full repo working context: tree, code, an embedded key, " +
+                   "customer and roadmap notes.",
+      sumA: "A minimal bug repro — a 10-line snippet and one error, nothing else.",
+      sumB: "A generic API-documentation task — no codebase, no internals.",
+    },
+  },
+  zh: {
+    "00_private_idea": {
+      bad: "那家供應商現在握有你的產品名、獨門機制、定價、GTM 通路、還有你的" +
+           "「申請前不得揭露」註記。一次貼上，全部奉上。",
+      sumOriginal: "一位創辦人尚未發表的創業點子完整工作筆記。",
+      sumA: "一個泛用的定位問題——沒有名字、沒有差異化、沒有定價。",
+      sumB: "一個 README 結構任務——沒有點子、沒有商業模式。",
+    },
+    "01_private_code_context": {
+      bad: "那家供應商現在握有你的 repo 樹、一把誤 commit 的 API key、客戶名稱、" +
+           "還有你的競爭 roadmap。一次貼上，全部奉上。",
+      sumOriginal: "完整 repo 工作情境：檔案樹、程式碼、內嵌金鑰、客戶與 roadmap 註記。",
+      sumA: "最小 bug 重現——10 行片段加一條錯誤訊息，其他什麼都沒有。",
+      sumB: "一個泛用的 API 文件任務——沒有 codebase、沒有內部細節。",
+    },
+  },
+};
+
+function applyLang() {
+  document.documentElement.lang = LANG === "zh" ? "zh-Hant" : "en";
+  // language switch (present in both languages)
+  const here = location.pathname;
+  $("#langswitch").innerHTML = LANG === "zh"
+    ? ` · <a href="${here}">EN</a> / <b>中文</b>`
+    : ` · <b>EN</b> / <a href="${here}?lang=zh">中文</a>`;
+  if (LANG === "en") return;  // English static text is already in the HTML
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.dataset.i18n;
+    if (I18N.zh[key]) el.textContent = I18N.zh[key];
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach(el => {
+    const key = el.dataset.i18nHtml;
+    if (I18N.zh[key]) el.innerHTML = I18N.zh[key];
+  });
+}
 
 async function ftext(path) {
   const r = await fetch(BASE + path);
@@ -92,19 +216,20 @@ function sensitiveTokens(localOnly) {
   return [...toks].sort((a, b) => b.length - a.length);
 }
 function highlight(text, tokens) {
+  const OPEN = "@@APL_MARK@@", CLOSE = "@@APL_END@@"; // survive esc()'d text
   let html = esc(text);
   for (const t of tokens) {
     const re = new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
-    html = html.replace(re, m => "@@APL_MARK@@" + m + "@@APL_END@@");
+    html = html.replace(re, m => OPEN + m + CLOSE);
   }
-  return html.replaceAll("@@APL_MARK@@", "<mark>").replaceAll("@@APL_END@@", "</mark>");
+  return html.replaceAll(OPEN, "<mark>").replaceAll(CLOSE, "</mark>");
 }
 
 /* ------------------------------ UI flow ------------------------------ */
 const pct = x => (x * 100).toFixed(1) + "%";
 
 function meterHTML(label, ratio) {
-  return `<div class="meter"><span>${esc(label)} sees <b>${pct(ratio)}</b></span>
+  return `<div class="meter"><span>${T.sees(esc(label), pct(ratio))}</span>
     <div class="bar"><i style="width:${Math.min(ratio * 100, 100)}%"></i></div></div>`;
 }
 
@@ -112,7 +237,7 @@ async function loadExample(ex) {
   EX = ex;
   document.querySelectorAll(".choice").forEach(b =>
     b.classList.toggle("sel", b.dataset.ex === ex));
-  const story = STORY[ex];
+  const story = STORY[LANG][ex];
   const dir = "examples/" + ex + "/";
   const original = await ftext(dir + "input.original.example.txt");
   const localOnly = await fjson(dir + "local_only.json");
@@ -127,19 +252,14 @@ async function loadExample(ex) {
   $("#good-meters").innerHTML = RECEIPT.single_provider_exposure.map(e =>
     meterHTML(e.provider_id.replace("mock_", ""), e.exposure_ratio)).join("");
   $("#good-consequence").textContent =
-    `Worst single provider: ${pct(worst)} of the characters — and none of the ` +
-    `${RECEIPT.local_only_hashes.length} sensitive fields. ` +
-    `No single provider saw the full task context.`;
+    T.goodConsequence(pct(worst), RECEIPT.local_only_hashes.length);
   $("#compare").hidden = false;
 
   /* ---- Act 2: the mechanism ---- */
   const tokens = sensitiveTokens(localOnly);
-  $("#sum-original").textContent = story.sumOriginal +
-    ` (${original.length.toLocaleString()} characters)`;
+  $("#sum-original").textContent = story.sumOriginal + T.chars(original.length);
   $("#original").innerHTML = highlight(original, tokens);
-  $("#sum-local").textContent =
-    `${Object.keys(localOnly).length} fields — only their SHA-256 fingerprints ` +
-    `enter the receipt.`;
+  $("#sum-local").textContent = T.sumLocal(Object.keys(localOnly).length);
   $("#vault").innerHTML = Object.keys(localOnly).map(
     k => `<span>🔒 ${esc(k)}</span>`).join("");
   $("#localonly").textContent = Object.entries(localOnly)
@@ -150,8 +270,8 @@ async function loadExample(ex) {
   $("#payload-b").textContent = payloadB;
   const n = original.length;
   const ra = payloadA.length / n, rb = payloadB.length / n;
-  $("#exp-a-label").innerHTML = `<b>${pct(ra)}</b> of the original`;
-  $("#exp-b-label").innerHTML = `<b>${pct(rb)}</b> of the original`;
+  $("#exp-a-label").innerHTML = T.ofOriginal(pct(ra));
+  $("#exp-b-label").innerHTML = T.ofOriginal(pct(rb));
   $("#exp-a").style.width = Math.min(ra * 100, 100) + "%";
   $("#exp-b").style.width = Math.min(rb * 100, 100) + "%";
   $("#answers").hidden = true;
@@ -161,7 +281,7 @@ async function loadExample(ex) {
   $("#receiptmeta").innerHTML = [
     ["task", RECEIPT.task_type],
     ["masking_level", RECEIPT.masking_level],
-    ["local-only fields", RECEIPT.local_only_hashes.length + " (fingerprints only)"],
+    ["local_only_fields", T.fieldsOnly(RECEIPT.local_only_hashes.length)],
     ["receipt_hash", RECEIPT.receipt_hash],
     ["signature", RECEIPT.signature.alg + " / key: " + RECEIPT.signing_key_id],
   ].map(([k, v]) => `<div><b>${esc(k)}</b>: ${esc(String(v))}</div>`).join("");
@@ -187,19 +307,15 @@ async function showVerdict(receipt, tampered) {
   const card = $("#verdict-card");
   card.hidden = false;
   card.className = "verdict-card";
-  card.textContent = "verifying in your browser...";
+  card.textContent = T.verifying;
   const res = await verifyReceipt(receipt);
   if (res.ok) {
     card.className = "verdict-card ok";
-    card.innerHTML = "✓ Signature verified. Receipt chain valid." +
-      "<small>Recomputed the canonical hash and checked the Ed25519 signature " +
-      "with WebCrypto — locally, just now.</small>";
+    card.innerHTML = T.verdictOk + "<small>" + T.verdictOkSub + "</small>";
   } else {
     card.className = "verdict-card fail";
-    card.innerHTML = "✗ Verification failed: receipt was modified or signature " +
-      "is invalid.<small>" + esc(res.reason) +
-      (tampered ? " — this copy differs from the real receipt by one number." : "") +
-      "</small>";
+    card.innerHTML = T.verdictFail + "<small>" + esc(res.reason) +
+      (tampered ? T.tamperNote : "") + "</small>";
   }
 }
 
@@ -209,5 +325,6 @@ $("#run").addEventListener("click", runMock);
 $("#verify-good").addEventListener("click", () => showVerdict(RECEIPT, false));
 $("#verify-bad").addEventListener("click", () => showVerdict(TAMPERED, true));
 
-/* first paint: never show an empty stage */
+/* first paint: apply language, never show an empty stage */
+applyLang();
 loadExample("00_private_idea");
