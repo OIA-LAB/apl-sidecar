@@ -8,20 +8,13 @@ the curated fixture signed by the repo demo key).
 from __future__ import annotations
 
 import json
-import sys
 import time
-from pathlib import Path
 
 from . import _common as c
 from . import _signing
 
-REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO))
-
-from adapters.mock_provider_a import provider as provider_a  # noqa: E402
-from adapters.mock_provider_b import provider as provider_b  # noqa: E402
-
-_ADAPTERS = {"mock_provider_a": provider_a, "mock_provider_b": provider_b}
+from adapters.base import ProviderRequest
+from adapters.mock import default_registry
 
 
 def build_receipt_body(paths: dict, responses: dict) -> dict:
@@ -64,9 +57,16 @@ def build_receipt_body(paths: dict, responses: dict) -> dict:
 
 def run(example_dir: str) -> int:
     paths = c.example_paths(example_dir)
+    registry = default_registry()
     responses = {}
-    for provider, adapter in _ADAPTERS.items():
-        responses[provider] = adapter.respond(paths["dir"])
+    for provider in c.PROVIDERS:
+        adapter = registry.get(provider)
+        if adapter.capabilities.network:
+            raise RuntimeError(f"offline mock command rejected network adapter: {provider}")
+        response = adapter.complete(ProviderRequest(
+            prompt=c.read_text(paths["payloads"][provider]), model=adapter.model,
+            fixture_dir=paths["dir"], metadata={"mode": "offline-mock"}))
+        responses[provider] = response.text
         print(f"[{provider}] mock response loaded "
               f"({len(responses[provider])} chars) -- no network call made")
     key, key_id = _signing.ensure_local_keypair()

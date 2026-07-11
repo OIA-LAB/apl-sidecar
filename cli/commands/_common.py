@@ -36,14 +36,21 @@ def text_sha256(text: str) -> str:
 def read_text(path: Path) -> str:
     return normalize(path.read_text(encoding="utf-8"))
 
+def estimated_tokens(text: str) -> int:
+    """Presentation-only estimate; receipt exposure remains character based."""
+    normalized = normalize(text).strip()
+    return (len(normalized) + 3) // 4 if normalized else 0
+
 
 def example_paths(example_dir: str | Path) -> dict:
-    d = Path(example_dir)
-    if not d.exists():
-        raise SystemExit(f"example directory not found: {d}")
+    requested = Path(example_dir)
+    if not requested.exists():
+        raise SystemExit(f"example path not found: {requested}")
+    d = requested.parent if requested.is_file() else requested
+    original = requested if requested.is_file() else d / "input.original.example.txt"
     return {
         "dir": d,
-        "original": d / "input.original.example.txt",
+        "original": original,
         "masking_plan": d / "masking_plan.yaml",
         "local_only": d / "local_only.json",
         "payloads": {p: d / PAYLOAD_FILES[p] for p in PROVIDERS},

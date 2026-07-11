@@ -1,144 +1,217 @@
 # APL Sidecar
 
-**Private Mode for AI.** APL runs minimal-exposure AI sessions so no single
-provider needs the whole picture. Preview and approve what leaves your machine,
-split sensitive context, reassemble locally, then clean up or retain a signed
-receipt as advanced trust evidence. See [Private Mode for AI](docs/private_mode.md).
+> Private Mode for AI — Experimental
 
-Private mode is a mental model, not a zero-trace promise: APL cannot control
-provider retention or hide account, IP, and network metadata. The local
-OpenAI-compatible proxy is an integration surface, not the product itself.
-Opening a private browser window does not hide what your prompt reveals.
+## Your prompt has a blast radius.
 
-APL Sidecar is an open-source local playground for AI task exposure control.
+APL shows what leaves your machine, splits sensitive AI tasks across providers, keeps final assembly local, and gives you a receipt you can verify offline.
 
-It is designed for sensitive AI tasks where the content itself is valuable:
+```bash
+git clone https://github.com/OIA-LAB/apl-sidecar.git
+cd apl-sidecar
+python -m pip install -e .
+apl demo
+```
 
-- a startup or side-project idea you have not announced;
-- a codebase, repo, or product context you do not want one AI provider to fully understand.
+**SEE** what each provider receives
+**KEEP** final assembly local
+**VERIFY** the disclosure trail offline
 
-APL Sidecar helps you preview:
+## Demo GIF
 
-- what stays local;
-- what each provider sees;
-- whether any single provider saw the full context;
-- whether the signed receipt can be verified later.
+![APL Sidecar: run, inspect, tamper, and verify](assets/apl-demo.gif)
 
-P0 uses user-guided masking, mock providers, local rehydration, signed receipts, exposure accounting, and tamper-fail verification.
+The demo is deterministic, uses bundled fictional data and offline mock providers, and requires no account, API key, or external network call.
 
-It does not claim zero leakage, provider non-retention, network anonymity, automatic semantic decomposition, or production-grade enterprise routing.
+## 60-second quickstart
 
-> Don't paste the whole idea. Don't expose the whole repo. Keep a receipt.
+Requires Python 3.11 or newer.
+
+```bash
+python -m pip install -e .
+apl demo
+```
+
+APL writes exactly three primary artifacts to `apl-out/`:
+
+```text
+apl-out/
+├── exposure.html
+├── receipt.json
+└── assessment.md
+```
+
+Then inspect or verify them:
+
+```bash
+apl inspect apl-out
+apl verify apl-out/receipt.json
+```
+
+`pipx install apl-sidecar` is the intended published-package experience. Until a release is explicitly published, install from this repository as shown above.
+
+## What each provider saw
+
+Open `apl-out/exposure.html` and switch between:
+
+- **Full Local View** — original task, disclosure plan, local-only context, both fragments and outputs, local stitch, and receipt.
+- **Provider A View** — only Provider A input, metadata, and output.
+- **Provider B View** — only Provider B input, metadata, and output.
+
+Each view labels information as `ORIGINAL`, `DERIVED`, `REDACTED`, `SENT`, `LOCAL`, `INFERRED`, or `VERIFIED`.
+
+## Break the receipt
+
+```bash
+apl break-receipt apl-out/receipt.json
+```
+
+This preserves the original, changes one meaningful field in `receipt.tampered.json`, and runs the canonical offline verifier. Verification must fail:
+
+```text
+Changed field: provider_events[0].payload_sha256
+Verification failed: receipt was modified or signature is invalid.
+```
+
+The original still succeeds:
+
+```bash
+apl verify apl-out/receipt.json
+```
+
+## What just happened?
+
+```text
+PASTE / bundled fictional task
+  ↓
+SPLIT / curated controlled disclosures
+  ↓
+SEE / exact Provider A and Provider B views
+  ↓
+STITCH / deterministic fixture output reassembled locally
+  ↓
+RECEIPT / canonical Ed25519-signed disclosure record
+  ↓
+VERIFY / offline hash and signature verification
+```
+
+The v0.1 split is user-guided and fixture-backed. Automatic semantic decomposition is not claimed.
+
+## Three generated artifacts
+
+- `exposure.html` is a self-contained visual record with three perspectives, disclosure flow, local stitch, receipt status, and residual-risk summary.
+- `receipt.json` is the real canonical signed receipt produced by the existing APL signing path, not a simplified marketing receipt.
+- `assessment.md` is a deterministic exploratory reconstruction assessment that states recovered signals, missing context, confidence, residual risk, and method.
+
+## Exposure metrics
+
+The canonical receipt uses normalized character-count ratios defined in [the exposure model](docs/exposure_model.md). The viewer also presents transparent `ceil(characters / 4)` token estimates for developer orientation.
+
+For the bundled scenario, Provider A and Provider B receive different partial inputs. Disclosure volume is shown separately from reconstruction risk. APL never transforms a disclosure ratio into “percent safer” or a privacy guarantee.
+
+## OpenAI-compatible example
+
+Route a tested OpenAI-compatible request through the local APL Sidecar after starting the offline proxy:
+
+```bash
+apl proxy --port 8793
+```
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://127.0.0.1:8793/v1", api_key="local")
+response = client.chat.completions.create(
+    model="apl-mock-a",
+    messages=[{"role": "user", "content": "Analyze this confidential task..."}],
+)
+print(response.choices[0].message.content)
+```
+
+The current integration surface implements `GET /v1/models` and non-streaming `POST /v1/chat/completions` for two offline mock models. It does not claim universal OpenAI-client compatibility.
 
 ## How it works
 
-```
-Your sensitive task
-   │
-   ├── local-only fields ──────────────► never leave your machine
-   │
-   ├── Provider A payload ─► mock provider A ─┐
-   ├── Provider B payload ─► mock provider B ─┤
-   │                                          ▼
-   └──────────────► local rehydration ◄───────┘
-                          │
-                          ▼
-              signed exposure receipt
-        (who saw what, how much, verifiable,
-             tamper-evident, chainable)
-```
+The existing scenario supplies an original fictional task, a masking plan, declared local-only fields, two distinct provider payloads, deterministic mock answers, and a local final artifact. `apl demo` routes both payloads through the explicit `ProviderRegistry`, rejects network-enabled adapters, reintroduces local context only on the machine, signs the canonical receipt, verifies it, and renders the three artifacts.
 
-No login. No API key. No network. Mock/offline by default.
+No second runtime, receipt format, hash function, or verifier is used.
 
-## Quick start
+## What the receipt proves
 
-```bash
-pip install cryptography pyyaml
+APL demonstrates:
 
-python cli/apl.py preview examples/00_private_idea
-python cli/apl.py run-mock examples/00_private_idea
-python cli/apl.py rehydrate examples/00_private_idea
-python cli/apl.py inspect examples/00_private_idea/receipt.json
-python cli/apl.py verify examples/00_private_idea/receipt.json
-```
+- what payload the runtime prepared for each provider;
+- what payload the configured adapter recorded as sent;
+- which response hashes entered the run;
+- which local-only field fingerprints were recorded;
+- measured character disclosure volume under this run;
+- whether the receipt remains internally consistent and its Ed25519 signature verifies.
 
-And for the code-context scenario:
+See [the receipt standard](RECEIPT_STANDARD.md).
 
-```bash
-python cli/apl.py preview examples/01_private_code_context
-python cli/apl.py run-mock examples/01_private_code_context
-python cli/apl.py rehydrate examples/01_private_code_context
-python cli/apl.py inspect examples/01_private_code_context/receipt.json
-python cli/apl.py verify examples/01_private_code_context/receipt.json
-```
+## What the receipt does not prove
 
-Interactive playground (local, offline):
+APL does not prove:
 
-```bash
-python cli/apl.py playground
-# open http://127.0.0.1:8791/app/local_playground/ — loopback only, zero network calls
-```
+- that a provider deleted data or did not log it elsewhere;
+- that task intent cannot be reconstructed;
+- that providers do not collude;
+- that all semantic information was removed;
+- cryptographic secrecy of task intent;
+- regulatory compliance, legal non-liability, or universal provider compatibility.
 
-Tamper check — change ONE byte of a receipt and verification must fail:
+See [claims and limits](docs/claims-and-limits.md).
 
-```bash
-python cli/apl.py verify examples/00_private_idea/tampered_receipt.example.json
-# -> Verification failed: receipt was modified or signature is invalid.
+## Reconstruction assessment
+
+`assessment.md` is deliberately exploratory. It reports recovered entities, relationships and objectives; missing context; a non-calibrated confidence value; residual risk; and the exact offline method. It never emits a standalone `SAFE`, `PRIVATE`, or `SECURE` verdict.
+
+Disclosure volume and reconstruction risk are different measurements.
+
+## Architecture
+
+```text
+existing scenario fixtures
+        ↓
+canonical ProviderRegistry → offline mock adapters
+        ↓
+canonical receipt builder → Ed25519 signer → reference verifier
+        ↓
+local fixture-backed stitch
+        ↓
+exposure.html + receipt.json + assessment.md
 ```
 
-## What P0 is (and is not)
+The local OpenAI-compatible proxy is an integration surface, not the product itself.
 
-P0 **is**: user-guided masking, provider payload preview, local-only field
-tracking, mock provider responses, local rehydration, character-count exposure
-accounting, Ed25519-signed receipts, receipt chaining, tamper-fail verification,
-fully offline reproducibility.
+## Provider adapters
 
-P0 **is not**: zero leakage, cryptographic secrecy of task content, provider
-non-retention, network or account anonymity, automatic semantic decomposition,
-automatic sensitive-field detection, or production-grade enterprise routing.
-See [docs/not_claims.md](docs/not_claims.md) for the full boundary.
+The protocol is defined in `adapters/base.py`, registration is explicit in `adapters/registry.py`, and bundled offline adapters live in `adapters/mock.py`. Unknown plugins are never auto-loaded.
 
-**P0 limitation statement:** P0 uses user-guided masking and curated provider
-payloads. Verification, signing, receipt chaining, and exposure accounting are
-real. Automatic semantic decomposition is a roadmap item, not a P0 claim.
+> Add a provider adapter without changing the APL runtime.
 
-## Modes
+Read [the provider adapter guide](docs/provider-adapters.md).
 
-| Mode          | Description                                      | API key | Network | Default      |
-| ------------- | ------------------------------------------------ | ------- | ------- | ------------ |
-| `mock`        | Offline fixture-based provider responses         | No      | No      | **Yes**      |
-| `hosted-live` | OIA-controlled backend relay using provider pool | No      | Yes     | Website only |
-| `byok`        | Bring your own API key                           | Yes     | Yes     | No           |
-| `enterprise`  | Production policy, routing, audit, governance    | Depends | Depends | No           |
+## Scenario packs
 
-The public repo defaults to mock/offline and is not bound to any live vendor.
-See [docs/experience_modes.md](docs/experience_modes.md) and
-[docs/hosted_live_demo.md](docs/hosted_live_demo.md).
+The existing `examples/<scenario>/` layout is the scenario-pack boundary. A scenario can be contributed without modifying the core runtime when it supplies the documented original, plan, local-only fields, provider payloads, fixture responses, local result, and receipt fixtures.
 
-## Enterprise and Vertical Workflows
+Read [the scenario-pack guide](docs/scenario-packs.md).
 
-APL Sidecar is the open-source entry point.
+## Security model
 
-Enterprise and vertical workflows are handled through APL Enterprise Gateway, including:
+Default demo behavior is network disabled, offline mock providers only, local output only, no telemetry, no account, and no API key. Any future real-provider path must require an explicit network opt-in and a preview warning; there is no silent fallback to live providers.
 
-- patent and invention disclosure workflows;
-- supplier negotiation and procurement analysis;
-- financial and board-level document workflows;
-- medical research and sensitive case summarization;
-- legal, compliance, and internal governance workflows.
+Private Mode is a product mental model, not a zero-trace promise. APL cannot hide account, IP, or network metadata or control provider retention. See [SECURITY.md](SECURITY.md) and [claims and limits](docs/claims-and-limits.md).
 
-These workflows require production policy enforcement, provider governance, deployment controls, audit evidence, and workflow-specific evidence packs.
+## Enterprise Gateway
 
-The public repo does not include enterprise routing logic, production decomposition rules, private workflow templates, or customer data.
+The open-source Sidecar demonstrates the runtime mechanism. Enterprise deployment, organization-wide policy, audit workflows, and provider governance belong to the [APL Enterprise Gateway](docs/enterprise_gateway.md).
 
-See [docs/enterprise_gateway.md](docs/enterprise_gateway.md).
+## Contributing
 
-## Roadmap: A2A
-
-APL for A2A is a roadmap direction for extending task exposure receipts from human-to-model workflows to agent-to-agent workflows. P0 does not support A2A.
-
-See [docs/roadmap_a2a.md](docs/roadmap_a2a.md).
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). Useful contributions include provider adapters, fictional scenario packs, verifier conformance vectors, accessibility improvements, and tests that sharpen product boundaries.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). All example content is fictional and synthetic.
+MIT — see [LICENSE](LICENSE). All bundled scenario content is fictional and synthetic.

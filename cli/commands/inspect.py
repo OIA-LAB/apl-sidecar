@@ -9,6 +9,18 @@ from . import _common as c
 
 def run(receipt_path: str) -> int:
     p = Path(receipt_path)
+    if p.is_dir():
+        receipt = p / "receipt.json"
+        exposure = p / "exposure.html"
+        assessment = p / "assessment.md"
+        if not all(item.is_file() for item in (receipt, exposure, assessment)):
+            print(f"incomplete APL output directory: {p}")
+            return 1
+        print(f"APL output: {p}")
+        print(f"  exposure:   {exposure}")
+        print(f"  receipt:    {receipt}")
+        print(f"  assessment: {assessment}")
+        p = receipt
     if not p.exists():
         print(f"receipt not found: {p}")
         return 1

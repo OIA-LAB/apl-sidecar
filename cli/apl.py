@@ -1,12 +1,16 @@
 """APL Sidecar CLI — local, offline, no API keys.
 
 Usage:
+    python cli/apl.py --help
+    python cli/apl.py demo       [--output apl-out] [--scenario example_dir]
     python cli/apl.py preview    <example_dir>
     python cli/apl.py mask       <example_dir>
+    python cli/apl.py run        <example_dir> [--output apl-out]
     python cli/apl.py run-mock   <example_dir>
     python cli/apl.py rehydrate  <example_dir>
     python cli/apl.py inspect    <receipt.json>
     python cli/apl.py verify     <receipt.json> [more...] [--pubkey key.pem]
+    python cli/apl.py break-receipt <receipt.json>
     python cli/apl.py playground [--port 8791]
     python cli/apl.py proxy      [--port 8793]
 """
@@ -19,6 +23,8 @@ _CLI = Path(__file__).resolve().parent
 sys.path.insert(0, str(_CLI.parent))
 sys.path.insert(0, str(_CLI))
 
+from commands import break_receipt as cmd_break_receipt  # noqa: E402
+from commands import demo as cmd_demo  # noqa: E402
 from commands import inspect as cmd_inspect  # noqa: E402
 from commands import mask as cmd_mask  # noqa: E402
 from commands import preview as cmd_preview  # noqa: E402
@@ -68,10 +74,35 @@ def _playground(argv: list[str]) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv == ["--help"] or argv == ["-h"]:
+        print(__doc__)
+        return 0
     if not argv:
         print(__doc__)
         return 2
     cmd, rest = argv[0], argv[1:]
+    if cmd == "demo":
+        output, scenario = "apl-out", None
+        while rest:
+            flag = rest.pop(0)
+            if flag not in ("--output", "--scenario") or not rest:
+                print("demo accepts --output <dir> and --scenario <example_dir>", file=sys.stderr)
+                return 2
+            value = rest.pop(0)
+            if flag == "--output":
+                output = value
+            else:
+                scenario = value
+        return cmd_demo.run(output, scenario)
+    if cmd == "run" and rest:
+        scenario = rest.pop(0)
+        output = "apl-out"
+        if rest:
+            if len(rest) != 2 or rest[0] != "--output":
+                print("run accepts <example_dir> [--output <dir>]", file=sys.stderr)
+                return 2
+            output = rest[1]
+        return cmd_demo.run(output, scenario)
     if cmd == "preview" and len(rest) == 1:
         return cmd_preview.run(rest[0])
     if cmd == "mask" and len(rest) == 1:
@@ -82,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_rehydrate.run(rest[0])
     if cmd == "inspect" and len(rest) == 1:
         return cmd_inspect.run(rest[0])
+    if cmd == "break-receipt" and len(rest) == 1:
+        return cmd_break_receipt.run(rest[0])
     if cmd == "verify" and rest:
         pubkey = None
         if "--pubkey" in rest:
