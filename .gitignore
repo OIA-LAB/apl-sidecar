@@ -12,3 +12,4 @@ keys/
 out/
 .env
 receipt.local.json
+*.egg-info/

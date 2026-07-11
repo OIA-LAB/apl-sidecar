@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apl-sidecar"
+version = "0.1.0"
+description = "Local exposure control and signed receipts for sensitive AI tasks"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = ["cryptography", "PyYAML"]
+
+[project.optional-dependencies]
+dev = ["jsonschema", "pytest", "ruff"]
+
+[project.scripts]
+apl = "cli.apl:main"
+
+[tool.setuptools.packages.find]
+include = ["adapters*", "cli*", "relay*", "verifier*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
