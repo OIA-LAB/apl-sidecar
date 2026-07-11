@@ -11,3 +11,4 @@ keys/
 # local run artifacts
 out/
 .env
+receipt.local.json
