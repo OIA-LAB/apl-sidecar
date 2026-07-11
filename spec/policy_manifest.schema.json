@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/oialab/apl-sidecar/spec/policy_manifest.schema.json",
+  "$id": "https://github.com/OIA-LAB/apl-sidecar/spec/policy_manifest.schema.json",
   "title": "APL Sidecar Policy Manifest v0.1.0-draft",
   "type": "object",
   "required": ["policy_id", "policy_version", "task_types",

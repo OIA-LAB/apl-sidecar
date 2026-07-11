@@ -1,5 +1,13 @@
 # APL Sidecar
 
+**Private Mode for AI.** APL runs minimal-exposure AI sessions so no single
+provider needs the whole picture. Preview and approve what leaves your machine,
+split sensitive context, reassemble locally, then clean up or retain a signed
+receipt as advanced trust evidence. See [Private Mode for AI](docs/private_mode.md).
+
+Private mode is a mental model, not a zero-trace promise: APL cannot control
+provider retention or hide account, IP, and network metadata. The local
+OpenAI-compatible proxy is an integration surface, not the product itself.
 Opening a private browser window does not hide what your prompt reveals.
 
 APL Sidecar is an open-source local playground for AI task exposure control.

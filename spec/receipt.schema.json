@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/oialab/apl-sidecar/spec/receipt.schema.json",
+  "$id": "https://github.com/OIA-LAB/apl-sidecar/spec/receipt.schema.json",
   "title": "APL Task Egress Receipt v0.1.0-draft",
   "type": "object",
   "required": [
