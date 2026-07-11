@@ -8,6 +8,7 @@ Usage:
     python cli/apl.py inspect    <receipt.json>
     python cli/apl.py verify     <receipt.json> [more...] [--pubkey key.pem]
     python cli/apl.py playground [--port 8791]
+    python cli/apl.py proxy      [--port 8793]
 """
 from __future__ import annotations
 
@@ -90,6 +91,20 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_verify.run(rest, pubkey)
     if cmd == "playground":
         return _playground(rest)
+    if cmd == "proxy":
+        from relay.openai_proxy import serve
+
+        port = 8793
+        if rest:
+            if len(rest) != 2 or rest[0] != "--port":
+                print("proxy accepts only --port <integer>", file=sys.stderr)
+                return 2
+            try:
+                port = int(rest[1])
+            except ValueError:
+                print("proxy --port requires an integer", file=sys.stderr)
+                return 2
+        return serve(port)
     print(__doc__)
     return 2
 
