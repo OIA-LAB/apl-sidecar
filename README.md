@@ -68,7 +68,7 @@ Interactive playground (local, offline):
 
 ```bash
 python cli/apl.py playground
-# opens http://127.0.0.1:8791/ — loopback only, zero network calls
+# open http://127.0.0.1:8791/app/local_playground/ — loopback only, zero network calls
 ```
 
 Tamper check — change ONE byte of a receipt and verification must fail:

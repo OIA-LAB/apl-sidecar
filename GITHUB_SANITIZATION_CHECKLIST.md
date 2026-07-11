@@ -3,27 +3,31 @@
 Every item must be confirmed before any push of this repository.
 This checklist itself ships with the repo as a living gate.
 
+> Status: last full manual pass 2026-07-11 (initial publication), all items
+> confirmed. Items enforced by CI carry a (CI) marker -- they are re-checked
+> on every test run, not just at publication time.
+
 ## Content
 
-- [ ] No customer data.
-- [ ] No private patent data.
-- [ ] No golden findings.
-- [ ] No internal patent pack templates.
-- [ ] No AIP paid workflow templates.
-- [ ] No internal metrics.
-- [ ] No unstable metrics (nothing published that cannot be recomputed from the repo).
-- [ ] No customer names.
-- [ ] No client prompts.
-- [ ] No private workflow logic (production decomposition rules stay closed).
-- [ ] All example content is fictional, synthetic, and marked as such.
+- [x] No customer data.
+- [x] No private patent data.
+- [x] No golden findings.
+- [x] No internal patent pack templates.
+- [x] No AIP paid workflow templates.
+- [x] No internal metrics.
+- [x] No unstable metrics (nothing published that cannot be recomputed from the repo).
+- [x] No customer names.
+- [x] No client prompts.
+- [x] No private workflow logic (production decomposition rules stay closed).
+- [x] All example content is fictional, synthetic, and marked as such.
 
 ## Secrets
 
-- [ ] No secret keys of any kind.
-- [ ] No vendor API keys (see scan list below).
-- [ ] No hidden `.env` files.
-- [ ] No production keypair; only public verification keys are committed.
-- [ ] Secret scan passes (`python -m pytest tests/ -k hygiene` where applicable).
+- [x] No secret keys of any kind. (CI)
+- [x] No vendor API keys (see scan list below). (CI)
+- [x] No hidden `.env` files.
+- [x] No production keypair; only public verification keys are committed. (CI)
+- [x] (CI) Secret scan passes (`python -m pytest tests/ -k hygiene` where applicable).
 
 Secret scan minimum term list:
 
@@ -48,15 +52,15 @@ PRIVATE_KEY
 
 ## Paths and terms
 
-- [ ] No private repo paths.
-- [ ] No internal machine paths (e.g. drive letters, user home dirs).
-- [ ] Deprecated-vocabulary gate passes:
+- [x] No private repo paths.
+- [x] No internal machine paths (e.g. drive letters, user home dirs).
+- [x] (CI) Deprecated-vocabulary gate passes:
       `python -m pytest tests/test_no_deprecated_terms.py -q`
       (the legacy no-single-cloud underscore term must not appear anywhere;
       canonical term is `no_single_provider_saw_full`).
 
 ## Network posture
 
-- [ ] No real provider default calls; mock/offline is the default everywhere.
-- [ ] No live vendor is required to run the P0 demo.
-- [ ] Playground binds loopback only.
+- [x] No real provider default calls; mock/offline is the default everywhere.
+- [x] No live vendor is required to run the P0 demo.
+- [x] Playground binds loopback only.

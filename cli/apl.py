@@ -37,11 +37,21 @@ def _playground(argv: list[str]) -> int:
 
     class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         """no-store: a stale cached app.js against fresh HTML silently breaks
-        the page (learned the hard way). A local demo never needs caching."""
+        the page (learned the hard way). A local demo never needs caching.
+        Root redirects to the playground — a trust product must not greet
+        its users with a raw directory listing."""
 
         def end_headers(self):
             self.send_header("Cache-Control", "no-store, must-revalidate")
             super().end_headers()
+
+        def do_GET(self):  # noqa: N802
+            if self.path in ("", "/"):
+                self.send_response(302)
+                self.send_header("Location", "/app/local_playground/")
+                self.end_headers()
+                return
+            super().do_GET()
 
     handler = functools.partial(NoCacheHandler, directory=str(root))
     server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)

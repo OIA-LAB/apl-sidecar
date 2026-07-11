@@ -42,4 +42,6 @@ def run(example_dir: str) -> int:
             print(f"  ! {leak}")
         return 1
     print("OK -- no local-only value appears in any provider payload.")
+    print("note: P0 check is exact-substring only -- paraphrased or partial")
+    print("      leakage is NOT detected. See docs/masking_levels.md (L1/L2).")
     return 0
