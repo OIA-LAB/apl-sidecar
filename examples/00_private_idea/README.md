@@ -28,20 +28,20 @@ constraints in a single request. A disposable account does not help: the
 Run it:
 
 ```bash
-python cli/apl.py preview   examples/00_private_idea
-python cli/apl.py mask      examples/00_private_idea      # leak-check
-python cli/apl.py run-mock  examples/00_private_idea
-python cli/apl.py rehydrate examples/00_private_idea
+apl preview   examples/00_private_idea
+apl mask      examples/00_private_idea      # leak-check
+apl run-mock  examples/00_private_idea
+apl rehydrate examples/00_private_idea
 ```
 
 ## How the receipt is verified
 
 ```bash
-python cli/apl.py inspect examples/00_private_idea/receipt.json
-python cli/apl.py verify  examples/00_private_idea/receipt.json
+apl inspect examples/00_private_idea/receipt.json
+apl verify  examples/00_private_idea/receipt.json
 # -> Signature verified. Receipt chain valid.
 
-python cli/apl.py verify  examples/00_private_idea/tampered_receipt.example.json
+apl verify  examples/00_private_idea/tampered_receipt.example.json
 # -> Verification failed: receipt was modified or signature is invalid.
 ```
 

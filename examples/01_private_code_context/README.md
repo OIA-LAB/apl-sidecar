@@ -26,20 +26,20 @@ account does not help: the **code context itself** is the sensitive asset.
 Run it:
 
 ```bash
-python cli/apl.py preview   examples/01_private_code_context
-python cli/apl.py mask      examples/01_private_code_context   # leak-check
-python cli/apl.py run-mock  examples/01_private_code_context
-python cli/apl.py rehydrate examples/01_private_code_context
+apl preview   examples/01_private_code_context
+apl mask      examples/01_private_code_context   # leak-check
+apl run-mock  examples/01_private_code_context
+apl rehydrate examples/01_private_code_context
 ```
 
 ## How the receipt is verified
 
 ```bash
-python cli/apl.py inspect examples/01_private_code_context/receipt.json
-python cli/apl.py verify  examples/01_private_code_context/receipt.json
+apl inspect examples/01_private_code_context/receipt.json
+apl verify  examples/01_private_code_context/receipt.json
 # -> Signature verified. Receipt chain valid.
 
-python cli/apl.py verify  examples/01_private_code_context/tampered_receipt.example.json
+apl verify  examples/01_private_code_context/tampered_receipt.example.json
 # -> Verification failed: receipt was modified or signature is invalid.
 ```
 

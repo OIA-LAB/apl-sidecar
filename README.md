@@ -1,12 +1,14 @@
 # APL Sidecar
 
-> Private Mode for AI — Experimental
+> Private Mode for AI
+
+![status: experimental](https://img.shields.io/badge/status-experimental-orange) ![demo: offline](https://img.shields.io/badge/demo-offline-black) ![license: MIT](https://img.shields.io/badge/license-MIT-green)
 
 ## Your prompt has a blast radius.
 
-APL shows what leaves your machine, splits sensitive AI tasks across providers, keeps final assembly local, and gives you a receipt you can verify offline.
+Every request to an external AI is a disclosure.
 
-Private Mode controls and records task exposure; it is not a zero-trace, anonymity, or non-reconstruction guarantee.
+APL shows what leaves your machine, splits sensitive tasks across providers, stitches the result locally, and gives you a receipt you can verify offline.
 
 ```bash
 git clone https://github.com/OIA-LAB/apl-sidecar.git
@@ -15,9 +17,20 @@ python -m pip install -e .
 apl demo
 ```
 
-**SEE** what each provider receives
-**KEEP** final assembly local
-**VERIFY** the disclosure trail offline
+**SEE** what each provider receives  
+**KEEP** final assembly local  
+**VERIFY** the disclosure trail offline  
+**BREAK** the receipt and watch verification fail
+
+Don't trust the receipt? Good. Break it yourself:
+
+```bash
+apl break-receipt apl-out/receipt.json
+```
+
+APL controls and records task exposure. It does not guarantee anonymity, zero trace, or resistance to intent reconstruction.
+
+We publish [what we refuse to claim](docs/claims-and-limits.md).
 
 ## Demo GIF
 
@@ -60,7 +73,7 @@ Open `apl-out/exposure.html` and switch between:
 - **Provider A View** — only Provider A input, metadata, and output.
 - **Provider B View** — only Provider B input, metadata, and output.
 
-Each view labels information as `ORIGINAL`, `DERIVED`, `REDACTED`, `SENT`, `LOCAL`, `INFERRED`, or `VERIFIED`.
+Each view labels information as `ORIGINAL`, `DERIVED`, `REDACTED`, `SENT`, `RECEIVED`, `LOCAL`, `INFERRED`, or `VERIFIED`.
 
 ## Break the receipt
 

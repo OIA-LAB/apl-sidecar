@@ -1,18 +1,18 @@
-"""APL Sidecar CLI — local, offline, no API keys.
+"""APL Sidecar CLI - local, offline, no API keys.
 
 Usage:
-    python cli/apl.py --help
-    python cli/apl.py demo       [--output apl-out] [--scenario example_dir]
-    python cli/apl.py preview    <example_dir>
-    python cli/apl.py mask       <example_dir>
-    python cli/apl.py run        <example_dir> [--output apl-out]
-    python cli/apl.py run-mock   <example_dir>
-    python cli/apl.py rehydrate  <example_dir>
-    python cli/apl.py inspect    <receipt.json>
-    python cli/apl.py verify     <receipt.json> [more...] [--pubkey key.pem]
-    python cli/apl.py break-receipt <receipt.json>
-    python cli/apl.py playground [--port 8791]
-    python cli/apl.py proxy      [--port 8793]
+    apl --help
+    apl demo       [--output apl-out] [--scenario example_dir]
+    apl preview    <example_dir>
+    apl mask       <example_dir>
+    apl run        <example_dir> [--output apl-out]
+    apl run-mock   <example_dir>
+    apl rehydrate  <example_dir>
+    apl inspect    <receipt.json>
+    apl verify     <receipt.json> [more...] [--pubkey key.pem]
+    apl break-receipt <receipt.json>
+    apl playground [--port 8791]
+    apl proxy      [--port 8793]
 """
 from __future__ import annotations
 

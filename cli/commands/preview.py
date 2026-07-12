@@ -29,7 +29,7 @@ def run(example_dir: str) -> int:
         print(f"  {provider}: {info['exposure_ratio']:.1%}")
     print(f"  max_single_provider_exposure: {view['max_single_provider_exposure']:.1%}")
     print(f"  no_single_provider_saw_full: {view['no_single_provider_saw_full']}")
-    print("\nResidual risk: payloads preserve category, audience, and task intent.")
+    print("\nResidual disclosure risk: payloads preserve category, audience, and task intent.")
     print("Warning: token counts are estimates; receipt exposure remains character based.")
     print("Note: P0 uses user-guided masking and curated provider payloads.")
     return 0

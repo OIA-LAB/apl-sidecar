@@ -1,6 +1,6 @@
 "use strict";
 /* APL Sidecar local playground — offline; loads example fixtures from this
- * repo via the local server started by `python cli/apl.py playground`.
+ * repo via the local server started by `apl playground`.
  * Three-act narrative: problem -> mechanism -> proof.
  * Bilingual: default English, `?lang=zh` for Traditional Chinese (UI chrome
  * only — the example fixtures themselves are English evidence artifacts).
@@ -190,7 +190,7 @@ async function verifyReceipt(receipt) {
       { name: "Ed25519" }, false, ["verify"]);
   } catch (e) {
     return { ok: false, reason: "public key unavailable or Ed25519 " +
-             "unsupported in this browser -- use: python cli/apl.py verify" };
+             "unsupported in this browser -- use: apl verify" };
   }
   const sig = Uint8Array.from(atob(receipt.signature.value), c => c.charCodeAt(0));
   const ok = await crypto.subtle.verify({ name: "Ed25519" }, key, sig,

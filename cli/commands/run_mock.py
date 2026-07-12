@@ -76,5 +76,5 @@ def run(example_dir: str) -> int:
                    encoding="utf-8")
     print(f"\nSigned receipt written: {out}")
     print(f"receipt_hash: {receipt['receipt_hash']}")
-    print(f"Verify it:    python cli/apl.py verify {out}")
+    print(f"Verify it:    apl verify {out}")
     return 0

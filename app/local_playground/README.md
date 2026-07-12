@@ -1,7 +1,7 @@
 # Local Playground
 
 ```bash
-python cli/apl.py playground
+apl playground
 # then open http://127.0.0.1:8791/app/local_playground/
 ```
 
@@ -11,4 +11,4 @@ python cli/apl.py playground
   hash recomputation + Ed25519 via WebCrypto, against the repo demo public
   key in `spec/`. The tampered receipt must fail.
 - If your browser lacks WebCrypto Ed25519 (older browsers), the playground
-  says so and points you to `python cli/apl.py verify`.
+  says so and points you to `apl verify`.

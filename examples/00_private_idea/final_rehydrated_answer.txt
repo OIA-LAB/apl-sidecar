@@ -1,5 +1,5 @@
-[LOCAL REHYDRATION — produced on the user's machine by combining the two
-mock answers with the local-only context. No provider saw this document.]
+[PRE-AUTHORED FIXTURE — represents the local rehydration step: the two
+mock answers combined with the local-only context. No provider saw this document.]
 
 Quietloom launch plan (rehydrated locally):
 

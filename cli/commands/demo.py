@@ -10,16 +10,28 @@ from . import _common as c
 from . import _signing, run_mock, verify
 
 DEFAULT_SCENARIO = c.REPO / "examples" / "00_private_idea"
+REFERENCE_SCENARIO_ID = "00_private_idea"
+
+NEUTRAL_ASSESSMENT = """# Exploratory Reconstruction Assessment
+
+Assessment is available only for the bundled reference scenario. The receipt and verification results remain valid for this run.
+"""
+
+
+def _is_reference_scenario(paths: dict) -> bool:
+    return paths["dir"].name == REFERENCE_SCENARIO_ID
 
 
 def build_assessment(paths: dict, view: dict) -> str:
+    if not _is_reference_scenario(paths):
+        return NEUTRAL_ASSESSMENT
     local = c.load_local_only(paths)
     a = c.read_text(paths["payloads"]["mock_provider_a"])
     b = c.read_text(paths["payloads"]["mock_provider_b"])
     missing = "\n".join(f"- {name} (local-only field)" for name in sorted(local))
     return f"""# Exploratory Reconstruction Assessment
 
-This is a deterministic offline heuristic over disclosed mock payloads. It is not a secrecy proof or a calibrated attack benchmark.
+This is a fixed scenario assessment for demonstration only. It is not a secrecy proof or a calibrated attack benchmark.
 
 ## Recovered entities
 - developers and GitHub users
@@ -36,11 +48,11 @@ This is a deterministic offline heuristic over disclosed mock payloads. It is no
 ## Missing context
 {missing}
 
-## Reconstruction confidence
-`MEDIUM` — fixed scenario heuristic, not a calibrated probability. Category, audience, and objective remain inferable; named sensitive details remain local.
+## Reconstruction signal
+`MEDIUM` — what an observer of the disclosed fragments could plausibly infer: task category, audience, and objective. Fixed scenario value, not a calibrated probability.
 
-## Residual risk
-`MEDIUM` — category, audience, and task intent remain inferable even though named sensitive details stay local.
+## Residual disclosure risk
+`MEDIUM` — what remains exposed after masking: named sensitive details stay local, but category-level intent is still visible to each provider.
 
 ## Measured disclosure volume
 - Original task: approximately {c.estimated_tokens(c.read_text(paths['original']))} tokens ({view['original_chars']} normalized characters)
@@ -51,7 +63,7 @@ This is a deterministic offline heuristic over disclosed mock payloads. It is no
 Token figures use `ceil(normalized characters / 4)`. Canonical receipt exposure remains character based. Disclosure volume is not a privacy or reconstruction-risk percentage.
 
 ## Assessment method
-Bundled scenario labels and disclosed text are summarized with a fixed offline rule. No external provider, embedding model, or hidden classifier is used.
+The recovered entities, relationships, and objectives are fixed constants for the bundled demo scenario, not summaries derived from the disclosed text. No external provider, embedding model, or hidden classifier is used.
 """
 
 
@@ -60,18 +72,19 @@ def render_html(paths: dict, responses: dict[str, str], final_output: str,
     def esc(value: str) -> str:
         return html.escape(value, quote=True)
     original = c.read_text(paths["original"])
+    residual_risk = "MEDIUM" if _is_reference_scenario(paths) else "N/A"
     view = c.exposure_view(paths)
     local = json.dumps(c.load_local_only(paths), indent=2, ensure_ascii=False)
     cards = []
     for provider, label in (("mock_provider_a", "Provider A"), ("mock_provider_b", "Provider B")):
         payload = c.read_text(paths["payloads"][provider])
         metadata = json.dumps({"provider_id": provider, "mode": "offline-mock", "network": False}, indent=2)
-        cards.append(f'''<section class="pane" id="{provider}"><h2>{label} View <b>SENT</b></h2><p>Only this provider's input, metadata, and output are shown in this perspective.</p><h3>Input · REDACTED</h3><pre>{esc(payload)}</pre><h3>Metadata · DERIVED</h3><pre>{esc(metadata)}</pre><h3>Output · SENT</h3><pre>{esc(responses[provider])}</pre></section>''')
+        cards.append(f'''<section class="pane" id="{provider}"><h2>{label} View <b>SENT</b></h2><p>Only this provider's input, metadata, and output are shown in this perspective.</p><h3>Input · REDACTED</h3><pre>{esc(payload)}</pre><h3>Metadata · DERIVED</h3><pre>{esc(metadata)}</pre><h3>Output · RECEIVED</h3><pre>{esc(responses[provider])}</pre></section>''')
     provider_json = json.dumps({p: {"input": c.read_text(paths["payloads"][p]), "output": responses[p]} for p in c.PROVIDERS}, indent=2)
     return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>APL Exposure Viewer</title><style>
 body{{margin:auto;max-width:1100px;padding:32px;background:#f4f0e6;color:#14212b;font:16px/1.5 ui-monospace,monospace}}h1{{font-size:clamp(34px,7vw,68px);line-height:1}}section,.metric{{background:white;border:2px solid;padding:18px;margin:18px 0;box-shadow:5px 5px #14212b}}.metrics{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}}nav{{display:flex;gap:8px;flex-wrap:wrap}}button{{padding:10px;border:2px solid;background:white;font:inherit}}button.on{{background:#14212b;color:white}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf0ed;padding:14px;border-left:6px solid #8dd3ff}}.pane{{display:none}}.pane.on{{display:block}}b{{background:#c9f27b;padding:2px 5px}}
 </style></head><body><p>PRIVATE MODE FOR AI — EXPERIMENTAL</p><h1>Your prompt has a blast radius.</h1><p>See what leaves your machine, what stays local, and what this run can verify offline.</p>
-<section><h2>Summary</h2><div class="metrics"><div class="metric">Original<br><b>~{c.estimated_tokens(original)} tokens</b><br>{view['original_chars']} chars</div><div class="metric">Provider A<br><b>~{c.estimated_tokens(c.read_text(paths['payloads']['mock_provider_a']))} tokens</b></div><div class="metric">Provider B<br><b>~{c.estimated_tokens(c.read_text(paths['payloads']['mock_provider_b']))} tokens</b></div><div class="metric">External providers<br><b>2 offline mocks</b></div><div class="metric">Receipt<br><b>VERIFIED</b></div><div class="metric">Residual risk<br><b>MEDIUM</b></div></div></section>
+<section><h2>Summary</h2><div class="metrics"><div class="metric">Original<br><b>~{c.estimated_tokens(original)} tokens</b><br>{view['original_chars']} chars</div><div class="metric">Provider A<br><b>~{c.estimated_tokens(c.read_text(paths['payloads']['mock_provider_a']))} tokens</b></div><div class="metric">Provider B<br><b>~{c.estimated_tokens(c.read_text(paths['payloads']['mock_provider_b']))} tokens</b></div><div class="metric">External providers<br><b>2 offline mocks</b></div><div class="metric">Receipt<br><b>VERIFIED</b></div><div class="metric">Residual disclosure risk<br><b>{residual_risk}</b></div></div></section>
 <section><h2>Disclosure path</h2><pre>Original Task
 ├── LOCAL → local-only context
 ├── SENT → Provider A disclosure → response
