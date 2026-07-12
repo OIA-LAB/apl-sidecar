@@ -96,7 +96,10 @@ class OpenAICompatAdapter:
         text = message.get("content") if isinstance(message, dict) else None
         if not isinstance(text, str):
             raise _http.TransportError("openai-compatible response missing message content")
+        finish_reason = choices[0].get("finish_reason")
         return ProviderResponse(
             text=text, provider_id=self.provider_id, model=body["model"],
-            metadata={"finish_reason": choices[0].get("finish_reason"),
+            metadata={"finish_reason": finish_reason,
+                      "truncated": finish_reason == "length",
+                      "usage": data.get("usage"),
                       "endpoint_host": self.endpoint_host})

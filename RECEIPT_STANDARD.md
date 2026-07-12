@@ -49,10 +49,15 @@ The receipt proves what was sent. It does not prove what a provider retained.
 Field notes:
 
 - `run_id` — ULID (Crockford base32, 26 chars).
-- `task_type` — `private_idea | private_code_context` in P0.
+- `task_type` — lowercase snake_case identifier (pattern-constrained, not an
+  enum), so scenario packs can introduce new task types without a schema
+  change. P0 ships `private_idea` and `private_code_context`.
 - `provider_events[].payload_sha256` — sha256 (lower-hex) over the UTF-8 bytes
   of the payload text after CRLF→LF normalization.
 - `local_only_hashes` — fingerprints of fields that never left the machine.
+- Live runs (`apl run-live`) may add signature-covered optional event fields:
+  `endpoint_host`, `model`, `response_chars`, `response_truncated`, and
+  `usage` (provider-reported token counts). Mock fixtures omit them.
   Content is NOT in the receipt; only the hash is.
 - `single_provider_exposure[].exposure_ratio` —
   `characters_sent_to_provider / characters_in_original_input`.

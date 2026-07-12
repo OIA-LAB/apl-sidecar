@@ -1,0 +1,33 @@
+name: Release to PyPI
+
+# Trusted publishing: no API token is ever created or stored anywhere.
+# One-time setup on pypi.org (do this BEFORE pushing the first tag):
+#   1. Create/claim the project name "apl-sidecar" (or use "pending publisher"
+#      under your account: Account -> Publishing -> Add a pending publisher).
+#   2. Fill in: owner OIA-LAB, repository apl-sidecar,
+#      workflow release.yml, environment pypi.
+#   3. In this GitHub repo: Settings -> Environments -> create "pypi".
+# Then:  git tag v0.1.0 && git push origin v0.1.0
+# After the run succeeds:  pipx install apl-sidecar
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # OIDC for PyPI trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build
+      - run: python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1

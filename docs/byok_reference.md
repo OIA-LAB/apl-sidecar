@@ -21,10 +21,13 @@ apl run-live examples/00_private_idea --a anthropic --b openai --yes
 3. **Transmission.** One user message per provider containing only the
    approved payload. No system prompt, no metadata, temperature 0.
 4. **Live receipt.** Ed25519-signed with your local demo key,
-   `event_type: "live_response"`, plus `endpoint_host` and `model` per
-   provider event — all covered by the signature. The receipt is verified
-   before the command reports success. A partial run (one provider failed)
-   still writes a signed receipt: what was disclosed was disclosed.
+   `event_type: "live_response"`, plus signature-covered optional fields per
+   event: `endpoint_host`, `model`, `response_chars`, `response_truncated`,
+   and provider-reported `usage` token counts. The receipt is verified before
+   the command reports success. A partial run (one provider failed) still
+   writes a signed receipt: what was disclosed was disclosed. A response the
+   provider cut off at its length limit is marked `response_truncated: true`
+   and warned about — a partial answer never masquerades as complete.
 5. **Local rehydration.** Provider answers and local-only context are
    combined into `combined_answer.local.md` on your machine only.
 
@@ -41,6 +44,21 @@ The `openai` seat speaks to any OpenAI-compatible `/v1/chat/completions`
 endpoint. That one code path covers a hosted vendor, a **local model server**
 (vLLM, Ollama, llama.cpp) on loopback — the customer-controlled local seat —
 and the repo's own offline mock proxy.
+
+## Chaining runs into one audit trail
+
+Every receipt carries `prev_receipt_hash`. Link consecutive runs with
+`--chain` and verify the whole trail in one command:
+
+```
+apl run-live examples/00_private_idea --yes
+apl run-live examples/01_private_code_context --yes \
+    --output apl-live-out-2 --chain apl-live-out/receipt.live.json
+apl verify apl-live-out/receipt.live.json apl-live-out-2/receipt.live.json
+```
+
+The chain gate is fail-close and runs before any socket opens: if the
+previous receipt does not verify, nothing is transmitted.
 
 ## Offline end-to-end rehearsal of the live path
 

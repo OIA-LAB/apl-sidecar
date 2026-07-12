@@ -8,7 +8,7 @@ Usage:
     apl run        <example_dir> [--output apl-out]
     apl run-mock   <example_dir>
     apl run-live   <example_dir> [--a anthropic|openai] [--b anthropic|openai]
-                   [--output apl-live-out] [--yes]   (BYOK, network)
+                   [--output apl-live-out] [--chain prev_receipt.json] [--yes]
     apl rehydrate  <example_dir>
     apl inspect    <receipt.json>
     apl verify     <receipt.json> [more...] [--pubkey key.pem]
@@ -114,7 +114,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_run_mock.run(rest[0])
     if cmd == "run-live" and rest:
         scenario = rest.pop(0)
-        opts = {"--a": "anthropic", "--b": "openai", "--output": "apl-live-out"}
+        opts = {"--a": "anthropic", "--b": "openai",
+                "--output": "apl-live-out", "--chain": None}
         yes = False
         while rest:
             flag = rest.pop(0)
@@ -123,11 +124,11 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             if flag not in opts or not rest:
                 print("run-live accepts <example_dir> [--a KIND] [--b KIND]"
-                      " [--output DIR] [--yes]", file=sys.stderr)
+                      " [--output DIR] [--chain RECEIPT] [--yes]", file=sys.stderr)
                 return 2
             opts[flag] = rest.pop(0)
         return cmd_run_live.run(scenario, opts["--a"], opts["--b"],
-                                opts["--output"], yes)
+                                opts["--output"], yes, chain=opts["--chain"])
     if cmd == "rehydrate" and len(rest) == 1:
         return cmd_rehydrate.run(rest[0])
     if cmd == "inspect" and len(rest) == 1:

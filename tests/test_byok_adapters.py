@@ -27,7 +27,8 @@ def test_anthropic_request_shape_and_parse(monkeypatch):
     transport = CapturingTransport(
         {"content": [{"type": "text", "text": "hello"},
                      {"type": "text", "text": "world"}],
-         "stop_reason": "end_turn"})
+         "stop_reason": "end_turn",
+         "usage": {"input_tokens": 3, "output_tokens": 5}})
     adapter = AnthropicAdapter.from_env(seat="a", transport=transport)
     assert isinstance(adapter, ProviderAdapter)
     assert adapter.capabilities.network is True
@@ -41,6 +42,8 @@ def test_anthropic_request_shape_and_parse(monkeypatch):
     assert KEY in call["secrets"]  # transport is told what to scrub
     assert response.text == "hello\nworld"
     assert response.metadata["endpoint_host"] == "api.anthropic.com"
+    assert response.metadata["truncated"] is False
+    assert response.metadata["usage"]["output_tokens"] == 5
 
 
 def test_anthropic_requires_key(monkeypatch):
@@ -115,3 +118,17 @@ def test_transport_error_propagates_without_key(monkeypatch):
     with pytest.raises(TransportError) as excinfo:
         adapter.complete(ProviderRequest(prompt="p", model=adapter.model))
     assert KEY not in str(excinfo.value)
+
+
+def test_truncation_flags(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", KEY)
+    monkeypatch.setenv("OPENAI_API_KEY", KEY)
+    monkeypatch.setenv("APL_OPENAI_MODEL", "m")
+    cut_a = CapturingTransport({"content": [{"type": "text", "text": "half an ans"}],
+                                "stop_reason": "max_tokens"})
+    a = AnthropicAdapter.from_env(transport=cut_a)
+    assert a.complete(ProviderRequest(prompt="p", model=a.model)).metadata["truncated"] is True
+    cut_b = CapturingTransport({"choices": [{"message": {"content": "half"},
+                                             "finish_reason": "length"}]})
+    b = OpenAICompatAdapter.from_env(transport=cut_b)
+    assert b.complete(ProviderRequest(prompt="p", model="m")).metadata["truncated"] is True

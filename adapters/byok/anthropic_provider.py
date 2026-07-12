@@ -86,7 +86,10 @@ class AnthropicAdapter:
             raise _http.TransportError("anthropic response missing content blocks")
         text = "\n".join(b.get("text", "") for b in blocks
                          if isinstance(b, dict) and b.get("type") == "text")
+        stop_reason = data.get("stop_reason")
         return ProviderResponse(
             text=text, provider_id=self.provider_id, model=body["model"],
-            metadata={"stop_reason": data.get("stop_reason"),
+            metadata={"stop_reason": stop_reason,
+                      "truncated": stop_reason == "max_tokens",
+                      "usage": data.get("usage"),
                       "endpoint_host": self.endpoint_host})

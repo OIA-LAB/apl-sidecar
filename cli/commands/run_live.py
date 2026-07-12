@@ -50,10 +50,12 @@ def build_seat(kind: str, seat: str, transport: Transport | None = None):
     raise ByokConfigError(f"unknown provider kind: {kind!r} (expected one of {KINDS})")
 
 
-def build_receipt_body(paths: dict, seats: dict, responses: dict[str, str | None]) -> dict:
+def build_receipt_body(paths: dict, seats: dict, responses: dict,
+                       prev_hash: str | None = None) -> dict:
     """Live variant of the RECEIPT_STANDARD body: same exposure accounting,
-    event_type live_response/no_response, plus endpoint_host and model per
-    event (covered by the signature; permitted by the schema)."""
+    event_type live_response/no_response, plus signature-covered optional
+    fields per event: endpoint_host, model, response_chars,
+    response_truncated, and provider-reported usage."""
     view = c.exposure_view(paths)
     local_only = c.load_local_only(paths)
     plan = c.load_masking_plan(paths)
@@ -62,13 +64,21 @@ def build_receipt_body(paths: dict, seats: dict, responses: dict[str, str | None
     for seat, adapter in seats.items():
         info = view["providers"][SEAT_PAYLOAD[seat]]
         resp = responses.get(seat)
-        events.append({"provider_id": adapter.provider_id,
-                       "payload_sha256": info["payload_sha256"],
-                       "payload_chars": info["chars"],
-                       "response_sha256": c.text_sha256(resp) if resp else None,
-                       "event_type": "live_response" if resp else "no_response",
-                       "endpoint_host": adapter.endpoint_host,
-                       "model": adapter.model})
+        text = resp.text if resp else None
+        event = {"provider_id": adapter.provider_id,
+                 "payload_sha256": info["payload_sha256"],
+                 "payload_chars": info["chars"],
+                 "response_sha256": c.text_sha256(text) if text else None,
+                 "response_chars": len(text) if text else None,
+                 "event_type": "live_response" if text else "no_response",
+                 "endpoint_host": adapter.endpoint_host,
+                 "model": adapter.model}
+        if resp is not None:
+            event["response_truncated"] = bool(resp.metadata.get("truncated"))
+            usage = resp.metadata.get("usage")
+            if usage is not None:
+                event["usage"] = usage
+        events.append(event)
         exposures.append({"provider_id": adapter.provider_id,
                           "exposure_ratio": info["exposure_ratio"]})
     return {
@@ -82,7 +92,7 @@ def build_receipt_body(paths: dict, seats: dict, responses: dict[str, str | None
         "single_provider_exposure": exposures,
         "max_single_provider_exposure": view["max_single_provider_exposure"],
         "no_single_provider_saw_full": view["no_single_provider_saw_full"],
-        "prev_receipt_hash": None,
+        "prev_receipt_hash": prev_hash,
         "masking_level": "guided_curated_p0",
         "provenance": {
             "apl_sidecar_version": "0.1.0-draft",
@@ -121,13 +131,14 @@ def _confirm(yes: bool) -> bool:
 
 
 def _write_combined(out_dir: Path, paths: dict, seats: dict,
-                    responses: dict[str, str | None]) -> Path:
+                    responses: dict) -> Path:
     local_only = c.load_local_only(paths)
     parts = ["# Combined answer (assembled locally)\n"]
     for seat, adapter in seats.items():
         parts.append(f"\n## Seat {seat.upper()} — {adapter.provider_id} "
                      f"(saw only its payload)\n")
-        parts.append((responses.get(seat) or "(no response — provider call failed)") + "\n")
+        resp = responses.get(seat)
+        parts.append((resp.text if resp else "(no response — provider call failed)") + "\n")
     parts.append("\n## Local-only context (reintroduced on this machine only)\n")
     for fld, value in sorted(local_only.items()):
         parts.append(f"- **{fld}**: {value}\n")
@@ -138,7 +149,7 @@ def _write_combined(out_dir: Path, paths: dict, seats: dict,
 
 def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
         output: str = "apl-live-out", yes: bool = False,
-        transport: Transport | None = None) -> int:
+        transport: Transport | None = None, chain: str | None = None) -> int:
     paths = c.example_paths(example_dir)
 
     # 1. LEAK GATE — same rule as `apl mask`, enforced before any socket opens.
@@ -148,6 +159,21 @@ def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
         for leak in leaks:
             print(f"  ! {leak}", file=sys.stderr)
         return 1
+
+    # 1b. CHAIN GATE — refuse to chain onto a receipt that does not verify.
+    # Fail-close, still before any socket opens: a broken chain is not
+    # something to discover after the disclosure already happened.
+    prev_hash = None
+    if chain:
+        sys.path.insert(0, str(c.REPO / "verifier"))
+        import apl_verify  # noqa: E402
+        try:
+            prev = json.loads(Path(chain).read_text(encoding="utf-8"))
+            apl_verify.verify_receipt(prev)
+        except Exception as exc:  # noqa: BLE001 — any failure refuses the chain
+            print(f"CHAIN REFUSED -- previous receipt invalid: {exc}", file=sys.stderr)
+            return 1
+        prev_hash = prev["receipt_hash"]
 
     try:
         seats = {"a": build_seat(a_kind, "a", transport),
@@ -165,17 +191,22 @@ def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
     # 3. TRANSMIT.
     out_dir = Path(output)
     out_dir.mkdir(parents=True, exist_ok=True)
-    responses: dict[str, str | None] = {}
+    responses: dict[str, object | None] = {}
     failures = []
     for seat, adapter in seats.items():
         payload = c.read_text(paths["payloads"][SEAT_PAYLOAD[seat]])
         try:
             result = adapter.complete(ProviderRequest(prompt=payload, model=adapter.model))
-            responses[seat] = result.text
+            responses[seat] = result
             (out_dir / f"live_answer_{seat}.local.txt").write_text(
                 result.text, encoding="utf-8")
             print(f"[seat {seat}] live response received ({len(result.text)} chars)"
                   f" from {adapter.endpoint_host}")
+            if result.metadata.get("truncated"):
+                print(f"[seat {seat}] WARNING: provider truncated this response"
+                      " at its length limit; the receipt records"
+                      " response_truncated=true so a partial answer can never"
+                      " masquerade as complete.", file=sys.stderr)
         except TransportError as exc:
             responses[seat] = None
             failures.append(seat)
@@ -184,7 +215,8 @@ def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
     # 4. RECEIPT — signed and verified even for partial runs: what was
     # disclosed was disclosed, whether or not an answer came back.
     key, key_id = _signing.ensure_local_keypair()
-    receipt = _signing.sign_receipt(build_receipt_body(paths, seats, responses), key, key_id)
+    receipt = _signing.sign_receipt(
+        build_receipt_body(paths, seats, responses, prev_hash), key, key_id)
     receipt_path = out_dir / "receipt.live.json"
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n",
                             encoding="utf-8")
@@ -196,6 +228,9 @@ def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
 
     combined = _write_combined(out_dir, paths, seats, responses)
     print(f"\nSigned receipt written and verified: {receipt_path}")
+    if prev_hash:
+        print(f"Chained onto verified receipt {prev_hash[:12]}…"
+              f"  (verify both: apl verify {chain} {receipt_path})")
     print(f"receipt_hash: {receipt['receipt_hash']}")
     print(f"Local rehydration:  {combined}")
     print(f"Verify any time:    apl verify {receipt_path}")
