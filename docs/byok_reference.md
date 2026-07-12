@@ -37,8 +37,8 @@ Keys never appear on the command line or in files this repo reads.
 
 | Seat kind   | Required                            | Optional |
 | ----------- | ----------------------------------- | -------- |
-| `anthropic` | `ANTHROPIC_API_KEY`                 | `APL_ANTHROPIC_MODEL[_A/_B]`, `APL_ANTHROPIC_BASE_URL`, `APL_ANTHROPIC_MAX_TOKENS` |
-| `openai`    | `APL_OPENAI_MODEL[_A/_B]`; `OPENAI_API_KEY` unless the endpoint is loopback | `APL_OPENAI_BASE_URL[_A/_B]` |
+| `anthropic` | `ANTHROPIC_API_KEY`                 | `APL_ANTHROPIC_MODEL[_<FRAGMENT_ID>]`, `APL_ANTHROPIC_BASE_URL`, `APL_ANTHROPIC_MAX_TOKENS` |
+| `openai`    | `APL_OPENAI_MODEL[_<FRAGMENT_ID>]`; `OPENAI_API_KEY` unless the endpoint is loopback | `APL_OPENAI_BASE_URL[_<FRAGMENT_ID>]` |
 
 The `openai` seat speaks to any OpenAI-compatible `/v1/chat/completions`
 endpoint. That one code path covers a hosted vendor, a **local model server**
@@ -70,7 +70,7 @@ apl proxy --port 8793   # terminal 1 — loopback-only mock proxy
 
 # terminal 2
 export APL_OPENAI_BASE_URL=http://127.0.0.1:8793/v1
-export APL_OPENAI_MODEL_A=apl-mock-a
+export APL_OPENAI_MODEL_MOCK_PROVIDER_A=apl-mock-a
 export APL_OPENAI_MODEL_B=apl-mock-b
 apl run-live examples/00_private_idea --a openai --b openai --yes
 apl verify apl-live-out/receipt.live.json

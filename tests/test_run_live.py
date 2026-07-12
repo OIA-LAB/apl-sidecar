@@ -48,20 +48,20 @@ def test_run_live_full_flow(monkeypatch, tmp_path):
     _env(monkeypatch)
     transport = FakeTransport()
     out = tmp_path / "live-out"
-    code = run_live.run(str(EXAMPLE), "anthropic", "openai",
+    code = run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(out), yes=True, transport=transport)
     assert code == 0
     assert len(transport.calls) == 2
     receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
     verify_receipt(receipt)  # signed with the local demo key; must verify
     events = {e["provider_id"]: e for e in receipt["provider_events"]}
-    assert events["byok_anthropic_a"]["event_type"] == "live_response"
-    assert events["byok_openai_b"]["event_type"] == "live_response"
-    assert events["byok_anthropic_a"]["endpoint_host"] == "api.anthropic.com"
+    assert events["byok_anthropic_mock_provider_a"]["event_type"] == "live_response"
+    assert events["byok_openai_mock_provider_b"]["event_type"] == "live_response"
+    assert events["byok_anthropic_mock_provider_a"]["endpoint_host"] == "api.anthropic.com"
     assert receipt["no_single_provider_saw_full"] is True
-    assert events["byok_anthropic_a"]["usage"]["output_tokens"] == 7
-    assert events["byok_anthropic_a"]["response_truncated"] is False
-    assert events["byok_openai_b"]["response_chars"] == len("live answer (test-model-b)")
+    assert events["byok_anthropic_mock_provider_a"]["usage"]["output_tokens"] == 7
+    assert events["byok_anthropic_mock_provider_a"]["response_truncated"] is False
+    assert events["byok_openai_mock_provider_b"]["response_chars"] == len("live answer (test-model-b)")
     # the live receipt with its optional event fields is schema-valid
     from tests._schema_check import check
     schema = json.loads((REPO / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
@@ -83,7 +83,7 @@ def test_leak_gate_blocks_before_any_network(monkeypatch, tmp_path):
     payload.write_text(payload.read_text(encoding="utf-8") + "\n" + secret_value,
                        encoding="utf-8")
     transport = FakeTransport()
-    code = run_live.run(str(leaky), "anthropic", "openai",
+    code = run_live.run(str(leaky), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(tmp_path / "out"), yes=True, transport=transport)
     assert code == 1
     assert transport.calls == []  # fail-close: nothing left the machine
@@ -93,7 +93,7 @@ def test_no_consent_means_no_calls(monkeypatch, tmp_path):
     _env(monkeypatch)
     transport = FakeTransport()
     # yes=False in a non-interactive test session must refuse and make no calls
-    code = run_live.run(str(EXAMPLE), "anthropic", "openai",
+    code = run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(tmp_path / "out"), yes=False, transport=transport)
     assert code == 1
     assert transport.calls == []
@@ -103,22 +103,22 @@ def test_partial_failure_still_leaves_signed_evidence(monkeypatch, tmp_path):
     _env(monkeypatch)
     transport = FakeTransport(fail_hosts=("api.openai.com",))
     out = tmp_path / "out"
-    code = run_live.run(str(EXAMPLE), "anthropic", "openai",
+    code = run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(out), yes=True, transport=transport)
     assert code == 1  # partial run is an error...
     receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
     verify_receipt(receipt)  # ...but the disclosure evidence is signed and valid
     events = {e["provider_id"]: e for e in receipt["provider_events"]}
-    assert events["byok_anthropic_a"]["event_type"] == "live_response"
-    assert events["byok_openai_b"]["event_type"] == "no_response"
-    assert events["byok_openai_b"]["response_sha256"] is None
+    assert events["byok_anthropic_mock_provider_a"]["event_type"] == "live_response"
+    assert events["byok_openai_mock_provider_b"]["event_type"] == "no_response"
+    assert events["byok_openai_mock_provider_b"]["response_sha256"] is None
 
 
 def test_misconfiguration_is_exit_2(monkeypatch, tmp_path):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", KEY)
     monkeypatch.setenv("APL_OPENAI_MODEL", "m")
-    code = run_live.run(str(EXAMPLE), "anthropic", "openai",
+    code = run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(tmp_path / "out"), yes=True,
                         transport=FakeTransport())
     assert code == 2
@@ -127,10 +127,10 @@ def test_misconfiguration_is_exit_2(monkeypatch, tmp_path):
 def test_chain_links_runs_into_verifiable_trail(monkeypatch, tmp_path):
     _env(monkeypatch)
     out1, out2 = tmp_path / "run1", tmp_path / "run2"
-    assert run_live.run(str(EXAMPLE), "anthropic", "openai",
+    assert run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(out1), yes=True, transport=FakeTransport()) == 0
     assert run_live.run(str(REPO / "examples" / "01_private_code_context"),
-                        "anthropic", "openai", output=str(out2), yes=True,
+                        seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"], output=str(out2), yes=True,
                         transport=FakeTransport(),
                         chain=str(out1 / "receipt.live.json")) == 0
     r1 = json.loads((out1 / "receipt.live.json").read_text(encoding="utf-8"))
@@ -143,14 +143,14 @@ def test_chain_links_runs_into_verifiable_trail(monkeypatch, tmp_path):
 def test_chain_refuses_invalid_previous_receipt(monkeypatch, tmp_path):
     _env(monkeypatch)
     out1 = tmp_path / "run1"
-    assert run_live.run(str(EXAMPLE), "anthropic", "openai",
+    assert run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(out1), yes=True, transport=FakeTransport()) == 0
     tampered = json.loads((out1 / "receipt.live.json").read_text(encoding="utf-8"))
     tampered["max_single_provider_exposure"] = 0.0
     bad = tmp_path / "tampered.json"
     bad.write_text(json.dumps(tampered), encoding="utf-8")
     transport = FakeTransport()
-    code = run_live.run(str(EXAMPLE), "anthropic", "openai",
+    code = run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(tmp_path / "run2"), yes=True,
                         transport=transport, chain=str(bad))
     assert code == 1
@@ -160,12 +160,12 @@ def test_chain_refuses_invalid_previous_receipt(monkeypatch, tmp_path):
 def test_truncated_response_is_marked_and_warned(monkeypatch, tmp_path, capsys):
     _env(monkeypatch)
     out = tmp_path / "out"
-    code = run_live.run(str(EXAMPLE), "anthropic", "openai",
+    code = run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(out), yes=True,
                         transport=FakeTransport(truncate=True))
     assert code == 0  # truncation is honesty-marked, not a run failure
     receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
     events = {e["provider_id"]: e for e in receipt["provider_events"]}
-    assert events["byok_anthropic_a"]["response_truncated"] is True
-    assert events["byok_openai_b"]["response_truncated"] is True
+    assert events["byok_anthropic_mock_provider_a"]["response_truncated"] is True
+    assert events["byok_openai_mock_provider_b"]["response_truncated"] is True
     assert "response_truncated=true" in capsys.readouterr().err

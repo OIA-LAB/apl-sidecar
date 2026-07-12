@@ -1,0 +1,20 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+Standard launch risks for consumer hardware entering retail:
+
+1. First to bite (weeks 1-8): inventory mis-allocation between regions and
+   DOA/returns spikes — both visible in sell-through and RMA rate almost
+   immediately. Certification gaps surface here too if any market was
+   assumed rather than verified.
+
+2. Second wave (months 2-4): review-driven PR risk (one viral defect
+   thread outweighs ten good reviews), logistics cost creep on small
+   replenishment orders, and warranty-reserve underestimation.
+
+3. Early metrics that expose them: weekly sell-through vs forecast, RMA
+   rate vs category norm, support-ticket first-response backlog, and
+   replenishment order size trend.
+
+4. Minimal cadence for a small team: weekly 30-minute risk stand-up for
+   the first quarter (sell-through, RMA, tickets), dropping to biweekly in
+   the second quarter if all three metrics hold inside thresholds.

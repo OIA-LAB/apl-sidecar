@@ -96,9 +96,49 @@ def load_public_key(signing_key_id: str, pubkey_path: str | None = None) -> Ed25
         f"(searched: {', '.join(str(c) for c in candidates)})")
 
 
+def _check_trust_domain_consistency(receipt: dict) -> None:
+    """v0.2 additive fields: when present, the per-trust-domain aggregation
+    must be recomputable from the signed per-seat data. Absent fields (v0.1
+    receipts) skip this check entirely — backward compatible by design."""
+    tde = receipt.get("trust_domain_exposure")
+    if tde is None:
+        return
+    seat_ratio = {e["provider_id"]: e["exposure_ratio"]
+                  for e in receipt.get("single_provider_exposure", [])}
+    seat_domain = {ev.get("seat_id"): ev.get("trust_domain")
+                   for ev in receipt.get("provider_events", [])}
+    seat_by_id = {ev.get("seat_id"): ev.get("provider_id")
+                  for ev in receipt.get("provider_events", [])}
+    recomputed: dict[str, float] = {}
+    for seat_id, domain in seat_domain.items():
+        if seat_id is None or domain is None:
+            raise VerifyError("trust_domain_exposure present but an event lacks "
+                              "seat_id/trust_domain")
+        ratio = seat_ratio.get(seat_by_id[seat_id])
+        if ratio is None:
+            raise VerifyError(f"no per-seat exposure recorded for seat {seat_id!r}")
+        recomputed[domain] = round(recomputed.get(domain, 0.0) + ratio, 6)
+    claimed = {d["trust_domain"]: d["exposure_ratio"] for d in tde}
+    if set(claimed) != set(recomputed):
+        raise VerifyError("trust_domain_exposure domains do not match events")
+    for domain, ratio in claimed.items():
+        if abs(ratio - recomputed[domain]) > 1e-6:
+            raise VerifyError(
+                f"trust_domain_exposure for {domain!r} is {ratio}, recomputed "
+                f"{recomputed[domain]} from signed per-seat data")
+    for field, value in (
+            ("max_single_trust_domain_exposure",
+             round(max(recomputed.values(), default=0.0), 6)),
+            ("max_single_provider_exposure",
+             round(max(recomputed.values(), default=0.0), 6))):
+        if field in receipt and abs(receipt[field] - value) > 1e-6:
+            raise VerifyError(f"{field} is {receipt[field]}, recomputed {value}")
+
+
 def verify_receipt(receipt: dict, pubkey_path: str | None = None) -> None:
     """Raises VerifyError on any failure; returns None when valid."""
     _check_shape(receipt)
+    _check_trust_domain_consistency(receipt)
     recomputed = compute_receipt_hash(receipt)
     if recomputed != receipt["receipt_hash"]:
         raise VerifyError("receipt_hash mismatch (content was modified)")

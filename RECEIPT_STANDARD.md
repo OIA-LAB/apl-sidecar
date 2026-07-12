@@ -128,7 +128,28 @@ both must verify, and the chain must verify.
 A conforming implementation accepts both valid vectors and rejects all four
 tamper vectors. `tests/test_tamper_vectors.py` enforces this in CI.
 
-## 6. Versioning
+## 6. v0.2 additive fields (N-way / live runs)
+
+Receipts produced by `apl run-live` carry `receipt_schema_version`
+"0.2.0-draft" and ADD (never change) fields:
+
+- per event: `seat_id`, `provider_kind`, `trust_domain`, `endpoint_host`,
+  `model`, `response_chars`, `response_truncated`, `usage`;
+- top level: `max_single_seat_exposure`, `trust_domain_exposure[]`
+  (`{trust_domain, exposure_ratio, seat_ids}`),
+  `max_single_trust_domain_exposure`,
+  `no_single_trust_domain_received_all_fragments`.
+
+Semantics: exposure is accounted per seat AND aggregated per trust domain
+(vendor hosts collapse to the vendor; other hosts group with the port
+stripped -- a port is not an isolation boundary). The legacy
+`max_single_provider_exposure` equals the trust-domain maximum, never the
+per-seat one. Verifiers MUST recompute the aggregation from the signed
+per-seat data when these fields are present and fail on mismatch;
+receipts without them (v0.1) remain valid. See docs/fragmentation.md.
+
+## 7. Versioning
+
 
 `provenance.receipt_schema_version` follows this document. Breaking changes
 bump the minor version while in draft (0.1 → 0.2) and are recorded here.

@@ -1,0 +1,29 @@
+[LOCAL REHYDRATION — produced on the user's machine by combining the three
+mock answers with the local-only context. No provider saw this document.]
+
+Brimshade Labs / Petrelwing launch plan (rehydrated locally):
+
+PRICING (fragment `pricing` + local numbers):
+- Retail anchor stays 129 USD; the 89 USD floor is protected by bundle
+  mechanics per answer A — direct online sells the extended bundle at the
+  anchor price, never discounts the base unit.
+- Answer A's 38-45% chain margin expectation against our 41.20 USD landed
+  cost confirms the 89 USD floor still clears contribution margin at the
+  worst case. (Cost figures never left this machine.)
+
+CHANNEL (fragment `channel` + local accounts):
+- Assortment-based separation per answer B: Nordqvist Home and Casa Verde
+  Retail get the standard SKU; the extended bundle stays direct-only.
+- Week-8 sell-through and week-10 returns thresholds from answer B become
+  the pilot-renewal gates in both chain agreements. (Neither chain was
+  named to any provider.)
+
+RISK (fragment `risk` + local date):
+- Working backwards from the private 2027-03-09 launch date: certification
+  verification closes eight weeks prior; the weekly risk stand-up per
+  answer C starts at launch week and runs through Q1.
+
+What each provider actually saw: one abstract workstream each — pricing
+structure, channel entry, or risk checklist. None saw the company, the
+codename, the date, the costs, or the pilot chains; and no single provider
+saw all three workstreams.

@@ -231,6 +231,17 @@ Default demo behavior is network disabled, offline mock providers only, local ou
 
 Private Mode is a product mental model, not a zero-trace promise. APL cannot hide account, IP, or network metadata or control provider retention. See [SECURITY.md](SECURITY.md) and [claims and limits](docs/claims-and-limits.md).
 
+## N-way fragmentation (2-5 seats)
+
+Tasks that separate into independent workstreams can split across up to
+five seats (`examples/02_market_entry_three_way` ships a three-way plan;
+run-live names every seat: `--seat pricing=anthropic --seat channel=openai
+--seat risk=openai`). Splitting lowers the measurable per-seat disclosure
+share, signed into the receipt; it does not by itself guarantee lower
+reconstruction risk, and seats that resolve to the same trust domain have
+their exposure aggregated -- the receipt records that too. Numbers, hard
+limits, and the trust-domain rule: [docs/fragmentation.md](docs/fragmentation.md).
+
 ## Enterprise Gateway
 
 The open-source Sidecar demonstrates the runtime mechanism. Enterprise deployment, organization-wide policy, audit workflows, and provider governance belong to the [APL Enterprise Gateway](docs/enterprise_gateway.md).

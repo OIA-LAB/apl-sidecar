@@ -57,18 +57,33 @@ def build_receipt_body(paths: dict, responses: dict) -> dict:
 
 def run(example_dir: str) -> int:
     paths = c.example_paths(example_dir)
-    registry = default_registry()
     responses = {}
-    for provider in c.PROVIDERS:
-        adapter = registry.get(provider)
-        if adapter.capabilities.network:
-            raise RuntimeError(f"offline mock command rejected network adapter: {provider}")
-        response = adapter.complete(ProviderRequest(
-            prompt=c.read_text(paths["payloads"][provider]), model=adapter.model,
-            fixture_dir=paths["dir"], metadata={"mode": "offline-mock"}))
-        responses[provider] = response.text
-        print(f"[{provider}] mock response loaded "
-              f"({len(responses[provider])} chars) -- no network call made")
+    declared = {f["id"] for f in paths["fragments"]} != {"mock_provider_a",
+                                                         "mock_provider_b"}
+    if declared:
+        # declared-fragment scenarios: curated answers are read straight from
+        # the files named in masking_plan.yaml (still zero network).
+        for frag in paths["fragments"]:
+            answer_path = frag["mock_answer"]
+            if answer_path is None:
+                raise SystemExit(
+                    f"fragment {frag['id']!r} declares no mock_answer; "
+                    "run-mock needs one per fragment")
+            responses[frag["id"]] = c.read_text(answer_path)
+            print(f"[{frag['id']}] mock response loaded "
+                  f"({len(responses[frag['id']])} chars) -- no network call made")
+    else:
+        registry = default_registry()
+        for provider in c.PROVIDERS:
+            adapter = registry.get(provider)
+            if adapter.capabilities.network:
+                raise RuntimeError(f"offline mock command rejected network adapter: {provider}")
+            response = adapter.complete(ProviderRequest(
+                prompt=c.read_text(paths["payloads"][provider]), model=adapter.model,
+                fixture_dir=paths["dir"], metadata={"mode": "offline-mock"}))
+            responses[provider] = response.text
+            print(f"[{provider}] mock response loaded "
+                  f"({len(responses[provider])} chars) -- no network call made")
     key, key_id = _signing.ensure_local_keypair()
     receipt = _signing.sign_receipt(build_receipt_body(paths, responses), key, key_id)
     out = paths["receipt_local"]

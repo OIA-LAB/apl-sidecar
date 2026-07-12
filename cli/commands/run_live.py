@@ -6,14 +6,23 @@ right in order:
 1. LEAK GATE   — the exact rule `apl mask` enforces; a failing plan is never
                  transmitted (fail-close, exit 1, zero network calls made).
 2. PRE-FLIGHT  — show exactly what will leave the machine, to whom, and how
-                 much, then require explicit consent (or --yes).
-3. TRANSMIT    — one user message per provider, containing only the approved
+                 much — per seat AND per trust domain — then require explicit
+                 consent (or --yes).
+3. TRANSMIT    — one user message per seat, containing only the approved
                  payload. Keys come from the environment and are scrubbed
                  from every error path; they never appear in receipts.
 4. RECEIPT     — Ed25519-signed, event_type "live_response", verified before
                  the command reports success. A partial run (one provider
                  failed) still produces a signed receipt recording exactly
                  which payload was disclosed — failures leave evidence too.
+
+Seats are not providers, and providers are not trust domains. Three seats
+that all resolve to the same vendor mean that vendor received ALL of those
+fragments — so exposure is accounted twice and both are signed into the
+receipt: per seat (max_single_seat_exposure) and aggregated per trust
+domain (max_single_trust_domain_exposure, and the legacy
+max_single_provider_exposure equals the trust-domain maximum). Fragment
+count alone reduces nothing; docs/fragmentation.md spells out the rule.
 
 Rehydration stays local: provider answers plus local-only context are
 combined on this machine only (combined_answer.local.md).
@@ -34,8 +43,8 @@ from adapters.byok.openai_provider import OpenAICompatAdapter
 from . import _common as c
 from . import _signing
 
-SEAT_PAYLOAD = {"a": "mock_provider_a", "b": "mock_provider_b"}
 KINDS = ("anthropic", "openai")
+RECEIPT_SCHEMA_VERSION = "0.2.0-draft"  # additive fields only; 0.1 receipts stay valid
 
 Transport = Callable[..., dict[str, Any]]
 
@@ -50,22 +59,107 @@ def build_seat(kind: str, seat: str, transport: Transport | None = None):
     raise ByokConfigError(f"unknown provider kind: {kind!r} (expected one of {KINDS})")
 
 
+def resolve_seats(paths: dict, seat_specs: list[str] | None,
+                  transport: Transport | None = None) -> dict:
+    """Map fragment ids to adapters from named --seat specs (fail-close).
+
+    Rules (documented in --help):
+    - two fragments and no --seat: legacy default anthropic, openai;
+    - three or more fragments: every fragment must be explicitly named;
+    - unknown id, duplicate id, missing or extra seats: ByokConfigError
+      (exit 2, zero transport).
+    """
+    fragment_ids = [f["id"] for f in paths["fragments"]]
+    if not seat_specs:
+        if len(fragment_ids) == 2:
+            return {fragment_ids[0]: build_seat("anthropic", fragment_ids[0], transport),
+                    fragment_ids[1]: build_seat("openai", fragment_ids[1], transport)}
+        raise ByokConfigError(
+            f"{len(fragment_ids)} fragments declared; every seat must be named "
+            "explicitly: --seat <fragment_id>=<anthropic|openai>")
+    mapping: dict[str, str] = {}
+    for spec in seat_specs:
+        fid, sep, kind = spec.partition("=")
+        if not sep or not fid or not kind:
+            raise ByokConfigError(f"--seat expects <fragment_id>=<kind>, got {spec!r}")
+        if fid not in fragment_ids:
+            raise ByokConfigError(
+                f"unknown fragment id {fid!r} (declared: {', '.join(fragment_ids)})")
+        if fid in mapping:
+            raise ByokConfigError(f"duplicate --seat for fragment {fid!r}")
+        if kind not in KINDS:
+            raise ByokConfigError(f"unknown provider kind: {kind!r} (expected one of {KINDS})")
+        mapping[fid] = kind
+    missing = [fid for fid in fragment_ids if fid not in mapping]
+    if missing:
+        raise ByokConfigError("missing --seat for fragment(s): " + ", ".join(missing))
+    return {fid: build_seat(mapping[fid], fid, transport) for fid in fragment_ids}
+
+
+def trust_domain_view(paths: dict, seats: dict) -> dict:
+    """Per-seat and per-trust-domain exposure accounting.
+
+    A seat is one fragment sent to one adapter. A trust domain is who
+    actually accumulates the fragments (c.trust_domain rule: known vendor
+    hosts collapse to the vendor; anything else aggregates by host with the
+    port stripped). Ratios are summed per domain; a domain that received
+    every fragment is flagged.
+    """
+    view = c.exposure_view(paths)
+    per_seat = {}
+    domains: dict[str, dict] = {}
+    for fid, adapter in seats.items():
+        info = view["providers"][fid]
+        domain = c.trust_domain(adapter.endpoint_host)
+        per_seat[fid] = {"exposure_ratio": info["exposure_ratio"],
+                         "chars": info["chars"],
+                         "payload_sha256": info["payload_sha256"],
+                         "trust_domain": domain}
+        entry = domains.setdefault(domain, {"exposure_ratio": 0.0, "seat_ids": []})
+        entry["exposure_ratio"] = round(entry["exposure_ratio"] + info["exposure_ratio"], 6)
+        entry["seat_ids"].append(fid)
+    all_seats = set(seats)
+    return {
+        "exposure_view": view,
+        "per_seat": per_seat,
+        "domains": domains,
+        "max_single_seat_exposure": round(
+            max((s["exposure_ratio"] for s in per_seat.values()), default=0.0), 6),
+        "max_single_trust_domain_exposure": round(
+            max((d["exposure_ratio"] for d in domains.values()), default=0.0), 6),
+        "no_single_trust_domain_received_all_fragments": not any(
+            set(d["seat_ids"]) == all_seats for d in domains.values()),
+    }
+
+
 def build_receipt_body(paths: dict, seats: dict, responses: dict,
                        prev_hash: str | None = None) -> dict:
-    """Live variant of the RECEIPT_STANDARD body: same exposure accounting,
-    event_type live_response/no_response, plus signature-covered optional
-    fields per event: endpoint_host, model, response_chars,
-    response_truncated, and provider-reported usage."""
-    view = c.exposure_view(paths)
+    """Live receipt body per RECEIPT_STANDARD v0.2 (additive fields).
+
+    Exposure is signed twice, deliberately:
+    - single_provider_exposure / max_single_seat_exposure: per seat;
+    - trust_domain_exposure / max_single_trust_domain_exposure: aggregated
+      by who actually receives the fragments.
+    The legacy max_single_provider_exposure field carries the trust-domain
+    maximum — per-seat numbers must never understate a vendor that holds
+    several fragments. Every event signs seat_id, provider_kind,
+    trust_domain and endpoint_host so the aggregation is recomputable from
+    the receipt alone.
+    """
+    tview = trust_domain_view(paths, seats)
     local_only = c.load_local_only(paths)
     plan = c.load_masking_plan(paths)
     policy = c.load_policy_manifest()
     events, exposures = [], []
-    for seat, adapter in seats.items():
-        info = view["providers"][SEAT_PAYLOAD[seat]]
-        resp = responses.get(seat)
+    for fid, adapter in seats.items():
+        info = tview["per_seat"][fid]
+        resp = responses.get(fid)
         text = resp.text if resp else None
         event = {"provider_id": adapter.provider_id,
+                 "seat_id": fid,
+                 "provider_kind": ("anthropic" if isinstance(adapter, AnthropicAdapter)
+                                   else "openai"),
+                 "trust_domain": info["trust_domain"],
                  "payload_sha256": info["payload_sha256"],
                  "payload_chars": info["chars"],
                  "response_sha256": c.text_sha256(text) if text else None,
@@ -90,13 +184,23 @@ def build_receipt_body(paths: dict, seats: dict, responses: dict,
             {"field": k, "sha256": c.text_sha256(json.dumps(v) if not isinstance(v, str) else v)}
             for k, v in sorted(local_only.items())],
         "single_provider_exposure": exposures,
-        "max_single_provider_exposure": view["max_single_provider_exposure"],
-        "no_single_provider_saw_full": view["no_single_provider_saw_full"],
+        "max_single_seat_exposure": tview["max_single_seat_exposure"],
+        "trust_domain_exposure": [
+            {"trust_domain": dom, "exposure_ratio": d["exposure_ratio"],
+             "seat_ids": d["seat_ids"]}
+            for dom, d in sorted(tview["domains"].items())],
+        "max_single_trust_domain_exposure": tview["max_single_trust_domain_exposure"],
+        "no_single_trust_domain_received_all_fragments":
+            tview["no_single_trust_domain_received_all_fragments"],
+        # legacy field: MUST carry the trust-domain maximum, never the
+        # per-seat maximum — a vendor holding 3 fragments is one provider.
+        "max_single_provider_exposure": tview["max_single_trust_domain_exposure"],
+        "no_single_provider_saw_full": tview["exposure_view"]["no_single_provider_saw_full"],
         "prev_receipt_hash": prev_hash,
         "masking_level": "guided_curated_p0",
         "provenance": {
             "apl_sidecar_version": "0.1.0-draft",
-            "receipt_schema_version": "0.1.0-draft",
+            "receipt_schema_version": RECEIPT_SCHEMA_VERSION,
             "policy_version": policy["policy_version"],
             "example_id": paths["dir"].name,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -104,18 +208,40 @@ def build_receipt_body(paths: dict, seats: dict, responses: dict,
     }
 
 
+def _same_domain_warnings(tview: dict) -> list[str]:
+    warnings = []
+    for dom, d in sorted(tview["domains"].items()):
+        if len(d["seat_ids"]) > 1:
+            warnings.append(
+                f"WARNING: {len(d['seat_ids'])} seats resolve to the same trust "
+                f"domain \"{dom}\". Fragment count does not reduce exposure to "
+                f"that provider: it receives {d['exposure_ratio']:.1%} combined "
+                f"({', '.join(d['seat_ids'])}).")
+    return warnings
+
+
 def _preflight(paths: dict, seats: dict) -> None:
-    view = c.exposure_view(paths)
+    tview = trust_domain_view(paths, seats)
     print("=" * 64)
     print(f"APL RUN-LIVE -- {paths['dir'].name} (NETWORK, bring-your-own-key)")
     print("=" * 64)
-    for seat, adapter in seats.items():
-        info = view["providers"][SEAT_PAYLOAD[seat]]
-        print(f"seat {seat.upper()}: {adapter.provider_id}"
-              f" -> host {adapter.endpoint_host}, model {adapter.model}")
+    for fid, adapter in seats.items():
+        info = tview["per_seat"][fid]
+        print(f"seat {fid}: {adapter.provider_id}"
+              f" -> host {adapter.endpoint_host}, model {adapter.model},"
+              f" trust domain {info['trust_domain']}")
         print(f"        payload {info['chars']} chars"
-              f" (exposure ratio {info['exposure_ratio']})")
-    print(f"no_single_provider_saw_full: {view['no_single_provider_saw_full']}")
+              f" (seat exposure ratio {info['exposure_ratio']})")
+    print("-" * 64)
+    for dom, d in sorted(tview["domains"].items()):
+        print(f"trust domain {dom}: {d['exposure_ratio']:.1%} combined"
+              f" ({len(d['seat_ids'])} seat(s): {', '.join(d['seat_ids'])})")
+    print(f"max_single_seat_exposure:         {tview['max_single_seat_exposure']}")
+    print(f"max_single_trust_domain_exposure: {tview['max_single_trust_domain_exposure']}")
+    print("no_single_trust_domain_received_all_fragments:",
+          tview["no_single_trust_domain_received_all_fragments"])
+    for warning in _same_domain_warnings(tview):
+        print(warning, file=sys.stderr)
     print("local-only fields never transmitted:",
           ", ".join(sorted(c.load_local_only(paths))) or "(none)")
 
@@ -134,10 +260,10 @@ def _write_combined(out_dir: Path, paths: dict, seats: dict,
                     responses: dict) -> Path:
     local_only = c.load_local_only(paths)
     parts = ["# Combined answer (assembled locally)\n"]
-    for seat, adapter in seats.items():
-        parts.append(f"\n## Seat {seat.upper()} — {adapter.provider_id} "
+    for fid, adapter in seats.items():
+        parts.append(f"\n## Fragment `{fid}` — {adapter.provider_id} "
                      f"(saw only its payload)\n")
-        resp = responses.get(seat)
+        resp = responses.get(fid)
         parts.append((resp.text if resp else "(no response — provider call failed)") + "\n")
     parts.append("\n## Local-only context (reintroduced on this machine only)\n")
     for fld, value in sorted(local_only.items()):
@@ -147,7 +273,7 @@ def _write_combined(out_dir: Path, paths: dict, seats: dict,
     return combined
 
 
-def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
+def run(example_dir: str, seat_specs: list[str] | None = None,
         output: str = "apl-live-out", yes: bool = False,
         transport: Transport | None = None, chain: str | None = None) -> int:
     paths = c.example_paths(example_dir)
@@ -161,8 +287,6 @@ def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
         return 1
 
     # 1b. CHAIN GATE — refuse to chain onto a receipt that does not verify.
-    # Fail-close, still before any socket opens: a broken chain is not
-    # something to discover after the disclosure already happened.
     prev_hash = None
     if chain:
         sys.path.insert(0, str(c.REPO / "verifier"))
@@ -175,14 +299,14 @@ def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
             return 1
         prev_hash = prev["receipt_hash"]
 
+    # 1c. SEAT RESOLUTION — named mapping, fail-close, zero transport on error.
     try:
-        seats = {"a": build_seat(a_kind, "a", transport),
-                 "b": build_seat(b_kind, "b", transport)}
+        seats = resolve_seats(paths, seat_specs, transport)
     except ByokConfigError as exc:
         print(f"configuration error: {exc}", file=sys.stderr)
         return 2
 
-    # 2. PRE-FLIGHT + consent.
+    # 2. PRE-FLIGHT + consent (includes per-trust-domain aggregation).
     _preflight(paths, seats)
     if not _confirm(yes):
         print("Aborted. Nothing was transmitted.")
@@ -193,24 +317,24 @@ def run(example_dir: str, a_kind: str = "anthropic", b_kind: str = "openai",
     out_dir.mkdir(parents=True, exist_ok=True)
     responses: dict[str, object | None] = {}
     failures = []
-    for seat, adapter in seats.items():
-        payload = c.read_text(paths["payloads"][SEAT_PAYLOAD[seat]])
+    for fid, adapter in seats.items():
+        payload = c.read_text(paths["payloads"][fid])
         try:
             result = adapter.complete(ProviderRequest(prompt=payload, model=adapter.model))
-            responses[seat] = result
-            (out_dir / f"live_answer_{seat}.local.txt").write_text(
+            responses[fid] = result
+            (out_dir / f"live_answer_{fid}.local.txt").write_text(
                 result.text, encoding="utf-8")
-            print(f"[seat {seat}] live response received ({len(result.text)} chars)"
+            print(f"[seat {fid}] live response received ({len(result.text)} chars)"
                   f" from {adapter.endpoint_host}")
             if result.metadata.get("truncated"):
-                print(f"[seat {seat}] WARNING: provider truncated this response"
+                print(f"[seat {fid}] WARNING: provider truncated this response"
                       " at its length limit; the receipt records"
                       " response_truncated=true so a partial answer can never"
                       " masquerade as complete.", file=sys.stderr)
         except TransportError as exc:
-            responses[seat] = None
-            failures.append(seat)
-            print(f"[seat {seat}] FAILED: {exc}", file=sys.stderr)
+            responses[fid] = None
+            failures.append(fid)
+            print(f"[seat {fid}] FAILED: {exc}", file=sys.stderr)
 
     # 4. RECEIPT — signed and verified even for partial runs: what was
     # disclosed was disclosed, whether or not an answer came back.
