@@ -6,6 +6,8 @@
 
 APL shows what leaves your machine, splits sensitive AI tasks across providers, keeps final assembly local, and gives you a receipt you can verify offline.
 
+Private Mode controls and records task exposure; it is not a zero-trace, anonymity, or non-reconstruction guarantee.
+
 ```bash
 git clone https://github.com/OIA-LAB/apl-sidecar.git
 cd apl-sidecar
@@ -66,7 +68,7 @@ Each view labels information as `ORIGINAL`, `DERIVED`, `REDACTED`, `SENT`, `LOCA
 apl break-receipt apl-out/receipt.json
 ```
 
-This preserves the original, changes one meaningful field in `receipt.tampered.json`, and runs the canonical offline verifier. Verification must fail:
+This preserves the original receipt, creates `receipt.tampered.json`, changes one meaningful field, and runs the offline verifier. Output excerpt:
 
 ```text
 Changed field: provider_events[0].payload_sha256
@@ -79,6 +81,8 @@ The original still succeeds:
 apl verify apl-out/receipt.json
 ```
 
+`apl break-receipt` returns `0` when the generated tampered copy is rejected as expected. A non-zero code means the demonstration itself failed—for example, the source could not be read, could not be tampered with, or the tampered receipt unexpectedly verified. Use `apl verify` to validate a normal receipt.
+
 ## What just happened?
 
 ```text
@@ -90,7 +94,7 @@ SEE / exact Provider A and Provider B views
   ↓
 STITCH / deterministic fixture output reassembled locally
   ↓
-RECEIPT / canonical Ed25519-signed disclosure record
+RECEIPT / signed Ed25519 disclosure record
   ↓
 VERIFY / offline hash and signature verification
 ```
@@ -100,12 +104,12 @@ The v0.1 split is user-guided and fixture-backed. Automatic semantic decompositi
 ## Three generated artifacts
 
 - `exposure.html` is a self-contained visual record with three perspectives, disclosure flow, local stitch, receipt status, and residual-risk summary.
-- `receipt.json` is the real canonical signed receipt produced by the existing APL signing path, not a simplified marketing receipt.
+- `receipt.json` is the signed receipt produced by the APL signing path.
 - `assessment.md` is a deterministic exploratory reconstruction assessment that states recovered signals, missing context, confidence, residual risk, and method.
 
 ## Exposure metrics
 
-The canonical receipt uses normalized character-count ratios defined in [the exposure model](docs/exposure_model.md). The viewer also presents transparent `ceil(characters / 4)` token estimates for developer orientation.
+The signed receipt uses normalized character-count ratios defined in [the exposure model](docs/exposure_model.md). The viewer also presents transparent `ceil(characters / 4)` token estimates for developer orientation.
 
 For the bundled scenario, Provider A and Provider B receive different partial inputs. Disclosure volume is shown separately from reconstruction risk. APL never transforms a disclosure ratio into “percent safer” or a privacy guarantee.
 
@@ -132,9 +136,7 @@ The current integration surface implements `GET /v1/models` and non-streaming `P
 
 ## How it works
 
-The existing scenario supplies an original fictional task, a masking plan, declared local-only fields, two distinct provider payloads, deterministic mock answers, and a local final artifact. `apl demo` routes both payloads through the explicit `ProviderRegistry`, rejects network-enabled adapters, reintroduces local context only on the machine, signs the canonical receipt, verifies it, and renders the three artifacts.
-
-No second runtime, receipt format, hash function, or verifier is used.
+The bundled scenario supplies an original fictional task, a masking plan, declared local-only fields, two distinct provider payloads, deterministic mock answers, and a local final artifact. `apl demo` routes both payloads through the `ProviderRegistry`, rejects network-enabled adapters, reintroduces local context only on the machine, signs the receipt, verifies it, and renders the three artifacts.
 
 ## What the receipt proves
 
@@ -164,7 +166,7 @@ See [claims and limits](docs/claims-and-limits.md).
 
 ## Reconstruction assessment
 
-`assessment.md` is deliberately exploratory. It reports recovered entities, relationships and objectives; missing context; a non-calibrated confidence value; residual risk; and the exact offline method. It never emits a standalone `SAFE`, `PRIVATE`, or `SECURE` verdict.
+`assessment.md` is deliberately exploratory. It reports recovered entities, relationships and objectives; missing context; a qualitative reconstruction confidence; residual risk; and the exact offline method. It never emits a standalone `SAFE`, `PRIVATE`, or `SECURE` verdict.
 
 Disclosure volume and reconstruction risk are different measurements.
 
@@ -173,9 +175,9 @@ Disclosure volume and reconstruction risk are different measurements.
 ```text
 existing scenario fixtures
         ↓
-canonical ProviderRegistry → offline mock adapters
+ProviderRegistry → offline mock adapters
         ↓
-canonical receipt builder → Ed25519 signer → reference verifier
+receipt builder → Ed25519 signer → reference verifier
         ↓
 local fixture-backed stitch
         ↓

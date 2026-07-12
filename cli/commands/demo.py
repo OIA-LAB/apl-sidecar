@@ -37,7 +37,7 @@ This is a deterministic offline heuristic over disclosed mock payloads. It is no
 {missing}
 
 ## Reconstruction confidence
-`0.42` — fixed scenario heuristic, not a calibrated probability.
+`MEDIUM` — fixed scenario heuristic, not a calibrated probability. Category, audience, and objective remain inferable; named sensitive details remain local.
 
 ## Residual risk
 `MEDIUM` — category, audience, and task intent remain inferable even though named sensitive details stay local.
