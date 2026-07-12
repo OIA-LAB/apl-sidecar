@@ -207,6 +207,18 @@ The protocol is defined in `adapters/base.py`, registration is explicit in `adap
 
 Read [the provider adapter guide](docs/provider-adapters.md).
 
+## BYOK reference: run-live
+
+`apl run-live` is the reference implementation of the real-provider path the
+security model requires: an explicit opt-in command (never a default), a leak
+gate shared with `apl mask`, a pre-flight disclosure preview with typed
+consent, environment-only keys scrubbed from every error path, and a signed
+`live_response` receipt that is verified before the command reports success —
+and written even when a provider call fails. There is no silent fallback from
+mock to live.
+
+Read [the BYOK reference guide](docs/byok_reference.md).
+
 ## Scenario packs
 
 The existing `examples/<scenario>/` layout is the scenario-pack boundary. A scenario can be contributed without modifying the core runtime when it supplies the documented original, plan, local-only fields, provider payloads, fixture responses, local result, and receipt fixtures.

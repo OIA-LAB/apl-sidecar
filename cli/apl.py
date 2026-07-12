@@ -7,6 +7,8 @@ Usage:
     apl mask       <example_dir>
     apl run        <example_dir> [--output apl-out]
     apl run-mock   <example_dir>
+    apl run-live   <example_dir> [--a anthropic|openai] [--b anthropic|openai]
+                   [--output apl-live-out] [--yes]   (BYOK, network)
     apl rehydrate  <example_dir>
     apl inspect    <receipt.json>
     apl verify     <receipt.json> [more...] [--pubkey key.pem]
@@ -29,6 +31,7 @@ from commands import inspect as cmd_inspect  # noqa: E402
 from commands import mask as cmd_mask  # noqa: E402
 from commands import preview as cmd_preview  # noqa: E402
 from commands import rehydrate as cmd_rehydrate  # noqa: E402
+from commands import run_live as cmd_run_live  # noqa: E402
 from commands import run_mock as cmd_run_mock  # noqa: E402
 from commands import verify as cmd_verify  # noqa: E402
 
@@ -109,6 +112,22 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_mask.run(rest[0])
     if cmd == "run-mock" and len(rest) == 1:
         return cmd_run_mock.run(rest[0])
+    if cmd == "run-live" and rest:
+        scenario = rest.pop(0)
+        opts = {"--a": "anthropic", "--b": "openai", "--output": "apl-live-out"}
+        yes = False
+        while rest:
+            flag = rest.pop(0)
+            if flag == "--yes":
+                yes = True
+                continue
+            if flag not in opts or not rest:
+                print("run-live accepts <example_dir> [--a KIND] [--b KIND]"
+                      " [--output DIR] [--yes]", file=sys.stderr)
+                return 2
+            opts[flag] = rest.pop(0)
+        return cmd_run_live.run(scenario, opts["--a"], opts["--b"],
+                                opts["--output"], yes)
     if cmd == "rehydrate" and len(rest) == 1:
         return cmd_rehydrate.run(rest[0])
     if cmd == "inspect" and len(rest) == 1:

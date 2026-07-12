@@ -89,6 +89,27 @@ def exposure_view(paths: dict) -> dict:
             "no_single_provider_saw_full": not saw_full}
 
 
+def leak_findings(paths: dict) -> list[str]:
+    """Exact-substring leak check shared by `apl mask` and `apl run-live`.
+
+    One rule, one implementation: the preview gate and the transmission gate
+    must never disagree. P0 limitation: exact substrings >= 4 chars only —
+    paraphrased or partial leakage is NOT detected (docs/masking_levels.md).
+    """
+    local_only = load_local_only(paths)
+    payload_texts = {p: read_text(path).lower()
+                     for p, path in paths["payloads"].items()}
+    findings = []
+    for fld, value in local_only.items():
+        needle = (value if isinstance(value, str) else str(value)).lower().strip()
+        if len(needle) < 4:
+            continue  # too short to be a meaningful leak signal
+        for provider, text in payload_texts.items():
+            if needle in text:
+                findings.append(f"{fld!r} value found in {provider} payload")
+    return findings
+
+
 def load_policy_manifest() -> dict:
     p = REPO / "spec" / "demo_policy_manifest.json"
     return json.loads(p.read_text(encoding="utf-8"))

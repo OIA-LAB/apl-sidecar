@@ -1,0 +1,72 @@
+# BYOK Reference Implementation
+
+`apl run-live` is the reference implementation of the real-provider path
+required by the security model: real providers, your keys, network on,
+**off by default**, no silent fallback from mock to live. It exists
+so that the receipt pipeline can be exercised against live endpoints without
+waiting for the enterprise gateway.
+
+## What it does
+
+```
+apl run-live examples/00_private_idea --a anthropic --b openai --yes
+```
+
+1. **Leak gate.** The exact rule `apl mask` enforces (shared implementation:
+   `cli/commands/_common.py::leak_findings`). A masking plan that fails the
+   gate is never transmitted — exit 1, zero network calls.
+2. **Pre-flight consent.** Prints each seat's destination host, model,
+   payload size, and exposure ratio, then requires you to type `send`
+   (or pass `--yes`). Non-interactive sessions without `--yes` refuse.
+3. **Transmission.** One user message per provider containing only the
+   approved payload. No system prompt, no metadata, temperature 0.
+4. **Live receipt.** Ed25519-signed with your local demo key,
+   `event_type: "live_response"`, plus `endpoint_host` and `model` per
+   provider event — all covered by the signature. The receipt is verified
+   before the command reports success. A partial run (one provider failed)
+   still writes a signed receipt: what was disclosed was disclosed.
+5. **Local rehydration.** Provider answers and local-only context are
+   combined into `combined_answer.local.md` on your machine only.
+
+## Seats and configuration (environment-only)
+
+Keys never appear on the command line or in files this repo reads.
+
+| Seat kind   | Required                            | Optional |
+| ----------- | ----------------------------------- | -------- |
+| `anthropic` | `ANTHROPIC_API_KEY`                 | `APL_ANTHROPIC_MODEL[_A/_B]`, `APL_ANTHROPIC_BASE_URL`, `APL_ANTHROPIC_MAX_TOKENS` |
+| `openai`    | `APL_OPENAI_MODEL[_A/_B]`; `OPENAI_API_KEY` unless the endpoint is loopback | `APL_OPENAI_BASE_URL[_A/_B]` |
+
+The `openai` seat speaks to any OpenAI-compatible `/v1/chat/completions`
+endpoint. That one code path covers a hosted vendor, a **local model server**
+(vLLM, Ollama, llama.cpp) on loopback — the customer-controlled local seat —
+and the repo's own offline mock proxy.
+
+## Offline end-to-end rehearsal of the live path
+
+The entire live pipeline can be rehearsed with zero external network by
+pointing both seats at the bundled proxy:
+
+```
+apl proxy --port 8793   # terminal 1 — loopback-only mock proxy
+
+# terminal 2
+export APL_OPENAI_BASE_URL=http://127.0.0.1:8793/v1
+export APL_OPENAI_MODEL_A=apl-mock-a
+export APL_OPENAI_MODEL_B=apl-mock-b
+apl run-live examples/00_private_idea --a openai --b openai --yes
+apl verify apl-live-out/receipt.live.json
+```
+
+This makes a real HTTP round trip on loopback and produces a genuine
+`live_response` receipt, without any key and without leaving the machine.
+
+## What this is not
+
+This reference does not claim provider non-retention, network or account
+anonymity, or automatic semantic decomposition — the boundaries in
+[not_claims.md](not_claims.md) apply unchanged. Masking remains user-guided
+(`guided_curated_p0`); the leak gate is exact-substring only and does not
+detect paraphrased leakage. Key handling is best-effort hygiene (environment
+input, scrubbed error paths, never written to receipts or artifacts), not a
+secrets manager. Exposure accounting remains character-based.
