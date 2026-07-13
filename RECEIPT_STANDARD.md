@@ -49,13 +49,25 @@ The receipt proves what was sent. It does not prove what a provider retained.
 Field notes:
 
 - `run_id` — ULID (Crockford base32, 26 chars).
-- `task_type` — `private_idea | private_code_context` in P0.
+- `task_type` — lowercase snake_case identifier (pattern-constrained, not an
+  enum), so scenario packs can introduce new task types without a schema
+  change. P0 ships `private_idea` and `private_code_context`.
 - `provider_events[].payload_sha256` — sha256 (lower-hex) over the UTF-8 bytes
   of the payload text after CRLF→LF normalization.
 - `local_only_hashes` — fingerprints of fields that never left the machine.
+- Live runs (`apl run-live`) may add signature-covered optional event fields:
+  `endpoint_host`, `model`, `response_chars`, `response_truncated`,
+  `completion` (`complete` | `truncated` | `unknown` — the tri-state source of
+  truth; `response_truncated` is its legacy boolean projection), and
+  `usage` (provider-reported token counts, whitelisted and int-coerced;
+  provider-asserted, not verified). Mock fixtures omit them.
   Content is NOT in the receipt; only the hash is.
 - `single_provider_exposure[].exposure_ratio` —
-  `characters_sent_to_provider / characters_in_original_input`.
+  `characters_sent_to_provider / characters_in_original_input`. This is a
+  cumulative disclosure ratio, NOT a fraction: a payload that restates or
+  expands shared context can legitimately exceed `1.0`, and per-trust-domain
+  aggregates are sums of seat ratios, so they exceed `1.0` whenever fragments
+  overlap. Capping at 1 would under-report — receipts must never do that.
 - `no_single_provider_saw_full` — true iff no provider payload equals the
   full original input (canonical term; the legacy no-single-cloud underscore vocabulary
   must not appear anywhere -- CI-gated).
@@ -123,7 +135,28 @@ both must verify, and the chain must verify.
 A conforming implementation accepts both valid vectors and rejects all four
 tamper vectors. `tests/test_tamper_vectors.py` enforces this in CI.
 
-## 6. Versioning
+## 6. v0.2 additive fields (N-way / live runs)
+
+Receipts produced by `apl run-live` carry `receipt_schema_version`
+"0.2.0-draft" and ADD (never change) fields:
+
+- per event: `seat_id`, `provider_kind`, `trust_domain`, `endpoint_host`,
+  `model`, `response_chars`, `response_truncated`, `usage`;
+- top level: `max_single_seat_exposure`, `trust_domain_exposure[]`
+  (`{trust_domain, exposure_ratio, seat_ids}`),
+  `max_single_trust_domain_exposure`,
+  `no_single_trust_domain_received_all_fragments`.
+
+Semantics: exposure is accounted per seat AND aggregated per trust domain
+(vendor hosts collapse to the vendor; other hosts group with the port
+stripped -- a port is not an isolation boundary). The legacy
+`max_single_provider_exposure` equals the trust-domain maximum, never the
+per-seat one. Verifiers MUST recompute the aggregation from the signed
+per-seat data when these fields are present and fail on mismatch;
+receipts without them (v0.1) remain valid. See docs/fragmentation.md.
+
+## 7. Versioning
+
 
 `provenance.receipt_schema_version` follows this document. Breaking changes
 bump the minor version while in draft (0.1 → 0.2) and are recorded here.

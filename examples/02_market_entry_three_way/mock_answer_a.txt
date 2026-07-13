@@ -1,0 +1,20 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+Launch pricing structure for a dual-channel consumer IoT device:
+
+1. Anchor and floor can coexist if they live in different channels. Keep
+   the premium anchor as the retail shelf price; let direct online carry
+   launch-window bundles (accessory or subscription) instead of discounts,
+   so the visible unit price never moves.
+
+2. Year-one relation: direct and retail list prices should match to the
+   euro. Differentiate on bundle value, not sticker — chains monitor for
+   undercutting and it poisons the relationship early.
+
+3. Discount mechanics that do not train markdown-waiting: time-boxed launch
+   bundle, loyalty credit on the companion app, trade-in later in the year.
+   Avoid percentage coupons in the first two quarters.
+
+4. Regional chains in this category typically expect a 38-45% retail
+   margin plus co-op marketing contribution; model the floor so it still
+   clears contribution margin at the worst of those terms.

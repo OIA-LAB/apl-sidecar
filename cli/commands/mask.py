@@ -12,7 +12,6 @@ from . import _common as c
 def run(example_dir: str) -> int:
     paths = c.example_paths(example_dir)
     plan = c.load_masking_plan(paths)
-    local_only = c.load_local_only(paths)
 
     print("=" * 64)
     print(f"APL MASK -- {paths['dir'].name} (guided_curated_p0)")
@@ -26,16 +25,7 @@ def run(example_dir: str) -> int:
         print(f"  - {s}")
 
     print("\n-- LEAK CHECK " + "-" * 48)
-    leaks = []
-    payload_texts = {p: c.read_text(path).lower()
-                     for p, path in paths["payloads"].items()}
-    for field, value in local_only.items():
-        needle = (value if isinstance(value, str) else str(value)).lower().strip()
-        if len(needle) < 4:
-            continue  # too short to be a meaningful leak signal
-        for provider, text in payload_texts.items():
-            if needle in text:
-                leaks.append(f"{field!r} value found in {provider} payload")
+    leaks = c.leak_findings(paths)
     if leaks:
         print("LEAK CHECK FAILED:")
         for leak in leaks:

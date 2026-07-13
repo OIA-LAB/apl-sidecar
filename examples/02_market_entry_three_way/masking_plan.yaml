@@ -1,0 +1,31 @@
+# APL masking plan — guided_curated_p0 (user-declared, not auto-detected)
+task_type: market_entry_plan
+
+# fields whose VALUES must never appear in any provider payload
+local_only_fields:
+  - company_name
+  - product_codename
+  - launch_date
+  - cost_structure
+  - pilot_accounts
+
+# abstract task signals deliberately PRESERVED so answers stay useful
+preserved_task_signals:
+  - product category (consumer IoT hardware, air quality)
+  - market shape (two European regional retail chains + direct online)
+  - pricing structure question (premium anchor coexisting with a floor)
+  - desired outputs (pricing structure, channel plan, risk checklist)
+
+# three fragments, each a self-contained workstream. Splitting lowers the
+# measurable per-seat disclosure share; whether it lowers reconstruction
+# risk is NOT guaranteed — see docs/fragmentation.md.
+fragments:
+  - id: pricing
+    payload: provider_a_payload.txt
+    mock_answer: mock_answer_a.txt
+  - id: channel
+    payload: provider_b_payload.txt
+    mock_answer: mock_answer_b.txt
+  - id: risk
+    payload: provider_c_payload.txt
+    mock_answer: mock_answer_c.txt

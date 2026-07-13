@@ -7,9 +7,10 @@ from pathlib import Path
 from adapters.base import ProviderRequest
 from adapters.mock import default_registry
 from . import _common as c
+from . import _resources
 from . import _signing, run_mock, verify
 
-DEFAULT_SCENARIO = c.REPO / "examples" / "00_private_idea"
+DEFAULT_SCENARIO = _resources.bundled_scenario_path("00_private_idea")
 REFERENCE_SCENARIO_ID = "00_private_idea"
 
 NEUTRAL_ASSESSMENT = """# Exploratory Reconstruction Assessment

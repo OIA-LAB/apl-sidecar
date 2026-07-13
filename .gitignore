@@ -14,3 +14,8 @@ out/
 receipt.local.json
 *.egg-info/
 apl-out/
+apl-live-out/
+receipt.live.json
+*.local.txt
+*.local.md
+apl-e2e-out/

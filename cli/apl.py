@@ -7,6 +7,12 @@ Usage:
     apl mask       <example_dir>
     apl run        <example_dir> [--output apl-out]
     apl run-mock   <example_dir>
+    apl run-live   <example_dir> [--seat FRAGMENT_ID=KIND ...]
+                   [--output apl-live-out] [--chain prev_receipt.json] [--yes]
+                   KIND is anthropic or openai. With exactly two fragments and
+                   no --seat, defaults to anthropic,openai. Three or more
+                   fragments require every seat to be named explicitly; the
+                   supported fragment range is 2-5.
     apl rehydrate  <example_dir>
     apl inspect    <receipt.json>
     apl verify     <receipt.json> [more...] [--pubkey key.pem]
@@ -28,7 +34,9 @@ from commands import demo as cmd_demo  # noqa: E402
 from commands import inspect as cmd_inspect  # noqa: E402
 from commands import mask as cmd_mask  # noqa: E402
 from commands import preview as cmd_preview  # noqa: E402
+from commands import _resources as cmd_resources  # noqa: E402
 from commands import rehydrate as cmd_rehydrate  # noqa: E402
+from commands import run_live as cmd_run_live  # noqa: E402
 from commands import run_mock as cmd_run_mock  # noqa: E402
 from commands import verify as cmd_verify  # noqa: E402
 
@@ -40,7 +48,7 @@ def _playground(argv: list[str]) -> int:
     port = 8791
     if "--port" in argv:
         port = int(argv[argv.index("--port") + 1])
-    root = _CLI.parent
+    root = cmd_resources.playground_root()
 
     class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         """no-store: a stale cached app.js against fresh HTML silently breaks
@@ -109,6 +117,31 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_mask.run(rest[0])
     if cmd == "run-mock" and len(rest) == 1:
         return cmd_run_mock.run(rest[0])
+    if cmd == "run-live" and rest:
+        scenario = rest.pop(0)
+        seats: list[str] = []
+        opts = {"--output": "apl-live-out", "--chain": None}
+        yes = False
+        while rest:
+            flag = rest.pop(0)
+            if flag == "--yes":
+                yes = True
+                continue
+            if flag == "--seat":
+                if not rest:
+                    print("--seat expects <fragment_id>=<anthropic|openai>",
+                          file=sys.stderr)
+                    return 2
+                seats.append(rest.pop(0))
+                continue
+            if flag not in opts or not rest:
+                print("run-live accepts <example_dir> [--seat ID=KIND ...]"
+                      " [--output DIR] [--chain RECEIPT] [--yes]", file=sys.stderr)
+                return 2
+            opts[flag] = rest.pop(0)
+        return cmd_run_live.run(scenario, seat_specs=seats or None,
+                                output=opts["--output"], yes=yes,
+                                chain=opts["--chain"])
     if cmd == "rehydrate" and len(rest) == 1:
         return cmd_rehydrate.run(rest[0])
     if cmd == "inspect" and len(rest) == 1:

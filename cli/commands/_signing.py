@@ -8,17 +8,19 @@ from pathlib import Path
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
+from . import _resources
+
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "verifier"))
 from apl_verify import compute_receipt_hash  # noqa: E402
 
 LOCAL_KEY_ID = "apl-local-demo-key"
-KEYS_DIR = REPO / "keys"
+KEYS_DIR = _resources.user_key_dir()
 
 
 def ensure_local_keypair() -> tuple[Ed25519PrivateKey, str]:
-    """Create (once) and load a local demo keypair under gitignored keys/."""
-    KEYS_DIR.mkdir(exist_ok=True)
+    """Create (once) and load a local demo keypair outside the installed package."""
+    KEYS_DIR.mkdir(parents=True, exist_ok=True)
     priv_path = KEYS_DIR / f"{LOCAL_KEY_ID}.private.pem"
     pub_path = KEYS_DIR / f"{LOCAL_KEY_ID}.pem"
     if priv_path.exists():

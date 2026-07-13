@@ -1,0 +1,8 @@
+Risk question (product identity withheld): a consumer IoT hardware product
+entering retail for the first time, alongside a direct online store.
+
+- What are the standard launch risks: inventory, returns, certification,
+  logistics, PR?
+- Which typically materialise first, and what early metrics expose them?
+- What minimal risk-review cadence suits a small team in the first two
+  quarters?

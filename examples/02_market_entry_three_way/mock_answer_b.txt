@@ -1,0 +1,17 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+Dual-region retail entry with a direct store, year one:
+
+1. Operations: commit inventory per region on a 13-week rolling forecast
+   with one mid-season rebalance; fund one merchandising refresh per chain;
+   train store staff with a 10-minute demo script and a returns cheat-sheet.
+
+2. Channel-conflict separation at this stage is usually assortment-based:
+   retail gets the standard SKU, direct gets the extended bundle and early
+   colourways. Price parity on the base SKU, differentiation on bundle.
+   Territory splits are premature at two chains.
+
+3. Early warning signs to scale back before renewal: sell-through below
+   60% of forecast at week 8, returns above category norm by week 10, or
+   the chain requesting markdown funding in the first quarter. Any two of
+   the three: renegotiate scope, do not expand.

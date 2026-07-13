@@ -207,6 +207,18 @@ The protocol is defined in `adapters/base.py`, registration is explicit in `adap
 
 Read [the provider adapter guide](docs/provider-adapters.md).
 
+## BYOK reference: run-live
+
+`apl run-live` is the reference implementation of the real-provider path the
+security model requires: an explicit opt-in command (never a default), a leak
+gate shared with `apl mask`, a pre-flight disclosure preview with typed
+consent, environment-only keys scrubbed from every error path, and a signed
+`live_response` receipt that is verified before the command reports success —
+and written even when a provider call fails. There is no silent fallback from
+mock to live.
+
+Read [the BYOK reference guide](docs/byok_reference.md).
+
 ## Scenario packs
 
 The existing `examples/<scenario>/` layout is the scenario-pack boundary. A scenario can be contributed without modifying the core runtime when it supplies the documented original, plan, local-only fields, provider payloads, fixture responses, local result, and receipt fixtures.
@@ -218,6 +230,17 @@ Read [the scenario-pack guide](docs/scenario-packs.md).
 Default demo behavior is network disabled, offline mock providers only, local output only, no telemetry, no account, and no API key. Any future real-provider path must require an explicit network opt-in and a preview warning; there is no silent fallback to live providers.
 
 Private Mode is a product mental model, not a zero-trace promise. APL cannot hide account, IP, or network metadata or control provider retention. See [SECURITY.md](SECURITY.md) and [claims and limits](docs/claims-and-limits.md).
+
+## N-way fragmentation (2-5 seats)
+
+Tasks that separate into independent workstreams can split across up to
+five seats (`examples/02_market_entry_three_way` ships a three-way plan;
+run-live names every seat: `--seat pricing=anthropic --seat channel=openai
+--seat risk=openai`). Splitting lowers the measurable per-seat disclosure
+share, signed into the receipt; it does not by itself guarantee lower
+reconstruction risk, and seats that resolve to the same trust domain have
+their exposure aggregated -- the receipt records that too. Numbers, hard
+limits, and the trust-domain rule: [docs/fragmentation.md](docs/fragmentation.md).
 
 ## Enterprise Gateway
 
