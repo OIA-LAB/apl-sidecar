@@ -20,6 +20,15 @@ def run(command: list[str], cwd: Path, env: dict[str, str]) -> subprocess.Comple
     return result
 
 
+def run_expect_fail(command: list[str], cwd: Path, env: dict[str, str]) -> None:
+    """The inverse gate: tamper detection must FAIL verification (nonzero)."""
+    result = subprocess.run(command, cwd=cwd, env=env, text=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    print(f"$ {' '.join(command)}  [expected to fail]\n{result.stdout}")
+    if result.returncode == 0:
+        raise SystemExit("tampered receipt VERIFIED — tamper detection is broken")
+
+
 def find_wheel(path: Path) -> Path:
     if path.is_file() and path.suffix == ".whl":
         return path.resolve()
@@ -60,6 +69,10 @@ def main() -> int:
         run([str(apl), "inspect", "apl-out"], work, env)
         run([str(apl), "verify", "apl-out/receipt.json"], work, env)
         run([str(apl), "break-receipt", "apl-out/receipt.json"], work, env)
+        # The wheel's core promise, exercised end-to-end: the packaged
+        # verifier + packaged pubkey must REJECT the tampered copy.
+        run_expect_fail([str(apl), "verify", "apl-out/receipt.tampered.json"],
+                        work, env)
 
         server = subprocess.Popen(
             [str(apl), "playground", "--port", "18891"], cwd=work, env=env,

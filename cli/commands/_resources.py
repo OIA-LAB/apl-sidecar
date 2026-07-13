@@ -12,6 +12,14 @@ SOURCE_ROOT = Path(__file__).resolve().parents[2]
 _TEMP_RESOURCES: list[tempfile.TemporaryDirectory] = []
 
 
+def _source_checkout() -> bool:
+    """True only when running from the actual repo checkout. Installed wheels
+    live in site-packages, where sibling 'examples'/'spec' directories may
+    belong to OTHER packages — without this marker gate they would silently
+    shadow our bundled assets (including the demo public key)."""
+    return (SOURCE_ROOT / ".git").is_dir()
+
+
 def _copy_tree(source: Any, destination: Path) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     for child in source.iterdir():
@@ -34,14 +42,15 @@ def _materialized_tree(package: str, *parts: str) -> Path:
 
 
 def bundled_scenario_path(scenario_id: str) -> Path:
-    source = SOURCE_ROOT / "examples" / scenario_id
-    if source.is_dir():
-        return source
+    if _source_checkout():
+        source = SOURCE_ROOT / "examples" / scenario_id
+        if source.is_dir():
+            return source
     return _materialized_tree("examples", scenario_id)
 
 
 def playground_root() -> Path:
-    if (SOURCE_ROOT / ".git").is_dir() and (
+    if _source_checkout() and (
             SOURCE_ROOT / "app" / "local_playground").is_dir():
         return SOURCE_ROOT
     playground = _materialized_tree("app", "local_playground")
@@ -49,16 +58,18 @@ def playground_root() -> Path:
 
 
 def read_spec_text(name: str) -> str:
-    source = SOURCE_ROOT / "spec" / name
-    if source.is_file():
-        return source.read_text(encoding="utf-8")
+    if _source_checkout():
+        source = SOURCE_ROOT / "spec" / name
+        if source.is_file():
+            return source.read_text(encoding="utf-8")
     return resources.files("spec").joinpath(name).read_text(encoding="utf-8")
 
 
 def read_spec_bytes(name: str) -> bytes:
-    source = SOURCE_ROOT / "spec" / name
-    if source.is_file():
-        return source.read_bytes()
+    if _source_checkout():
+        source = SOURCE_ROOT / "spec" / name
+        if source.is_file():
+            return source.read_bytes()
     return resources.files("spec").joinpath(name).read_bytes()
 
 
