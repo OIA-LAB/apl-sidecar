@@ -34,6 +34,7 @@ from commands import demo as cmd_demo  # noqa: E402
 from commands import inspect as cmd_inspect  # noqa: E402
 from commands import mask as cmd_mask  # noqa: E402
 from commands import preview as cmd_preview  # noqa: E402
+from commands import _resources as cmd_resources  # noqa: E402
 from commands import rehydrate as cmd_rehydrate  # noqa: E402
 from commands import run_live as cmd_run_live  # noqa: E402
 from commands import run_mock as cmd_run_mock  # noqa: E402
@@ -47,7 +48,7 @@ def _playground(argv: list[str]) -> int:
     port = 8791
     if "--port" in argv:
         port = int(argv[argv.index("--port") + 1])
-    root = _CLI.parent
+    root = cmd_resources.playground_root()
 
     class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         """no-store: a stale cached app.js against fresh HTML silently breaks

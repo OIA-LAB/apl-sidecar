@@ -18,7 +18,15 @@ dev = ["jsonschema", "pytest", "ruff"]
 apl = "cli.apl:main"
 
 [tool.setuptools.packages.find]
-include = ["adapters*", "cli*", "relay*", "verifier*"]
+include = ["adapters*", "app*", "cli*", "examples*", "relay*", "spec*", "verifier*"]
+
+[tool.setuptools.package-data]
+examples = ["*/*"]
+app = ["local_playground/*"]
+spec = ["demo_policy_manifest.json", "apl-oss-demo-key.pem"]
+
+[tool.setuptools.exclude-package-data]
+examples = ["*/receipt.local.json", "*/receipt.live.json"]
 
 [tool.ruff]
 line-length = 100

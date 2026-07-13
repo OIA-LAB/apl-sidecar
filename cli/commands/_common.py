@@ -8,6 +8,8 @@ import re
 import time
 from pathlib import Path
 
+from . import _resources
+
 REPO = Path(__file__).resolve().parents[2]
 
 PROVIDERS = ("mock_provider_a", "mock_provider_b")
@@ -187,5 +189,4 @@ def leak_findings(paths: dict) -> list[str]:
 
 
 def load_policy_manifest() -> dict:
-    p = REPO / "spec" / "demo_policy_manifest.json"
-    return json.loads(p.read_text(encoding="utf-8"))
+    return json.loads(_resources.read_spec_text("demo_policy_manifest.json"))

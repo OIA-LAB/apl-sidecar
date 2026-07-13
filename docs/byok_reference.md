@@ -1,90 +1,148 @@
 # BYOK Reference Implementation
 
-`apl run-live` is the reference implementation of the real-provider path
-required by the security model: real providers, your keys, network on,
-**off by default**, no silent fallback from mock to live. It exists
-so that the receipt pipeline can be exercised against live endpoints without
-waiting for the enterprise gateway.
+`apl run-live` is an optional reference implementation of the real-provider
+path. Offline `apl demo` remains the default. Live mode never starts silently:
+you must choose `run-live`, inspect the preflight, and either type `send` or
+pass `--yes` as explicit network consent.
 
-## What it does
+Always preview the scenario first:
 
-```
-apl run-live examples/00_private_idea --a anthropic --b openai --yes
-```
-
-1. **Leak gate.** The exact rule `apl mask` enforces (shared implementation:
-   `cli/commands/_common.py::leak_findings`). A masking plan that fails the
-   gate is never transmitted — exit 1, zero network calls.
-2. **Pre-flight consent.** Prints each seat's destination host, model,
-   payload size, and exposure ratio, then requires you to type `send`
-   (or pass `--yes`). Non-interactive sessions without `--yes` refuse.
-3. **Transmission.** One user message per provider containing only the
-   approved payload. No system prompt, no metadata, temperature 0.
-4. **Live receipt.** Ed25519-signed with your local demo key,
-   `event_type: "live_response"`, plus signature-covered optional fields per
-   event: `endpoint_host`, `model`, `response_chars`, `response_truncated`,
-   and provider-reported `usage` token counts. The receipt is verified before
-   the command reports success. A partial run (one provider failed) still
-   writes a signed receipt: what was disclosed was disclosed. A response the
-   provider cut off at its length limit is marked `response_truncated: true`
-   and warned about — a partial answer never masquerades as complete.
-5. **Local rehydration.** Provider answers and local-only context are
-   combined into `combined_answer.local.md` on your machine only.
-
-## Seats and configuration (environment-only)
-
-Keys never appear on the command line or in files this repo reads.
-
-| Seat kind   | Required                            | Optional |
-| ----------- | ----------------------------------- | -------- |
-| `anthropic` | `ANTHROPIC_API_KEY`                 | `APL_ANTHROPIC_MODEL[_<FRAGMENT_ID>]`, `APL_ANTHROPIC_BASE_URL`, `APL_ANTHROPIC_MAX_TOKENS` |
-| `openai`    | `APL_OPENAI_MODEL[_<FRAGMENT_ID>]`; `OPENAI_API_KEY` unless the endpoint is loopback | `APL_OPENAI_BASE_URL[_<FRAGMENT_ID>]` |
-
-The `openai` seat speaks to any OpenAI-compatible `/v1/chat/completions`
-endpoint. That one code path covers a hosted vendor, a **local model server**
-(vLLM, Ollama, llama.cpp) on loopback — the customer-controlled local seat —
-and the repo's own offline mock proxy.
-
-## Chaining runs into one audit trail
-
-Every receipt carries `prev_receipt_hash`. Link consecutive runs with
-`--chain` and verify the whole trail in one command:
-
-```
-apl run-live examples/00_private_idea --yes
-apl run-live examples/01_private_code_context --yes \
-    --output apl-live-out-2 --chain apl-live-out/receipt.live.json
-apl verify apl-live-out/receipt.live.json apl-live-out-2/receipt.live.json
+```powershell
+apl preview examples/00_private_idea
 ```
 
-The chain gate is fail-close and runs before any socket opens: if the
-previous receipt does not verify, nothing is transmitted.
+## Environment-only credentials
 
-## Offline end-to-end rehearsal of the live path
+Use environment variables, never command-line key arguments or committed files.
+These placeholders are not real credentials:
 
-The entire live pipeline can be rehearsed with zero external network by
-pointing both seats at the bundled proxy:
+```powershell
+$env:OPENAI_API_KEY="<your-openai-key>"
+$env:APL_OPENAI_MODEL="<your-openai-model>"
 
+$env:ANTHROPIC_API_KEY="<your-anthropic-key>"
+$env:APL_ANTHROPIC_MODEL="<your-anthropic-model>"  # optional
 ```
-apl proxy --port 8793   # terminal 1 — loopback-only mock proxy
 
-# terminal 2
-export APL_OPENAI_BASE_URL=http://127.0.0.1:8793/v1
-export APL_OPENAI_MODEL_MOCK_PROVIDER_A=apl-mock-a
-export APL_OPENAI_MODEL_B=apl-mock-b
-apl run-live examples/00_private_idea --a openai --b openai --yes
+OpenAI-compatible loopback endpoints do not require `OPENAI_API_KEY`. Hosted
+OpenAI-compatible endpoints do. Anthropic always requires
+`ANTHROPIC_API_KEY`.
+
+## Two-seat live example
+
+The bundled two-way scenario uses fragment IDs `mock_provider_a` and
+`mock_provider_b`:
+
+```powershell
+apl preview examples/00_private_idea
+apl run-live examples/00_private_idea `
+  --seat mock_provider_a=anthropic `
+  --seat mock_provider_b=openai `
+  --yes
+```
+
+Without `--yes`, the CLI prints each destination, payload size, seat exposure,
+and trust-domain aggregate, then requires typed consent.
+
+## Three-seat live example
+
+The market-entry scenario declares `pricing`, `channel`, and `risk`:
+
+```powershell
+apl preview examples/02_market_entry_three_way
+apl run-live examples/02_market_entry_three_way `
+  --seat pricing=anthropic `
+  --seat channel=openai `
+  --seat risk=openai `
+  --yes
+```
+
+The supported fragment range is 2–5. Three or more fragments require explicit
+`--seat FRAGMENT_ID=PROVIDER_KIND` mapping for every fragment.
+
+## Same-provider trust-domain warning
+
+Seat names do not create provider independence. Sending all three fragments to
+OpenAI resolves them to one trust domain and prints a warning before transport:
+
+```powershell
+apl run-live examples/02_market_entry_three_way `
+  --seat pricing=openai `
+  --seat channel=openai `
+  --seat risk=openai `
+  --yes
+```
+
+The receipt aggregates all three disclosures under the same trust domain.
+
+## What run-live does
+
+1. **Leak gate.** Uses the same exact-substring rule as `apl mask`. A failure
+   exits before transport.
+2. **Preflight and consent.** Shows every named seat and trust-domain aggregate
+   before any request.
+3. **Transmission.** Sends one user message per approved fragment, with no
+   system prompt and temperature 0.
+4. **Signed receipt.** Records the payload hash, endpoint host, model, response
+   hash, truncation state, and provider-reported usage when available.
+5. **Local rehydration.** Writes `combined_answer.local.md` locally.
+
+A partial transport failure still leaves signed disclosure evidence; it cannot
+fabricate a successful provider response.
+
+## Chaining runs
+
+```powershell
+apl run-live examples/00_private_idea `
+  --seat mock_provider_a=anthropic `
+  --seat mock_provider_b=openai `
+  --output apl-live-out-1 `
+  --yes
+
+apl run-live examples/01_private_code_context `
+  --seat mock_provider_a=anthropic `
+  --seat mock_provider_b=openai `
+  --output apl-live-out-2 `
+  --chain apl-live-out-1/receipt.live.json `
+  --yes
+
+apl verify apl-live-out-1/receipt.live.json apl-live-out-2/receipt.live.json
+```
+
+An invalid prior receipt fails before transport.
+
+## Loopback-only rehearsal
+
+This exercises the actual HTTP path without an API key or external network.
+Start the bundled loopback proxy:
+
+```powershell
+apl proxy --port 8793
+```
+
+In another terminal:
+
+```powershell
+$env:APL_OPENAI_BASE_URL_MOCK_PROVIDER_A="http://127.0.0.1:8793/v1"
+$env:APL_OPENAI_BASE_URL_MOCK_PROVIDER_B="http://127.0.0.1:8793/v1"
+$env:APL_OPENAI_MODEL_MOCK_PROVIDER_A="apl-mock-a"
+$env:APL_OPENAI_MODEL_MOCK_PROVIDER_B="apl-mock-b"
+
+apl preview examples/00_private_idea
+apl run-live examples/00_private_idea `
+  --seat mock_provider_a=openai `
+  --seat mock_provider_b=openai `
+  --yes
 apl verify apl-live-out/receipt.live.json
 ```
 
-This makes a real HTTP round trip on loopback and produces a genuine
-`live_response` receipt, without any key and without leaving the machine.
+Both seats normalize to trust domain `127.0.0.1`, so the CLI correctly warns
+that fragment count does not create provider isolation.
 
-## What this is not
+## Boundaries
 
-This reference does not claim provider non-retention, network or account
-anonymity, or automatic semantic decomposition — the boundaries in
-[not_claims.md](not_claims.md) apply unchanged. Masking remains user-guided
-(`guided_curated_p0`); the leak gate is exact-substring only and does not
-detect paraphrased leakage. Key handling is best-effort hygiene (environment
-input, scrubbed error paths, never written to receipts or artifacts), not a
-secrets manager. Exposure accounting remains character-based.
+This reference does not claim provider non-retention, anonymity, automatic
+semantic decomposition, or production readiness. Masking remains user-guided
+and the leak gate is exact-substring only. Keys are environment inputs scrubbed
+from known error paths, not managed by a secrets manager. Exposure accounting
+remains character-based and is not a reconstruction-risk score.

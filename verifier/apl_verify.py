@@ -14,9 +14,11 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import os
 import json
 import re
 import sys
+from importlib import resources as package_resources
 from pathlib import Path
 
 from cryptography.exceptions import InvalidSignature
@@ -36,7 +38,8 @@ REQUIRED_FIELDS = (
 
 _REPO = Path(__file__).resolve().parents[1]
 # pubkey resolution order for a given signing_key_id (first hit wins)
-_KEY_DIRS = (_REPO / "keys", _REPO / "spec")
+_USER_KEY_DIR = Path(os.environ.get("APL_KEY_DIR", Path.home() / ".apl-sidecar" / "keys"))
+_KEY_DIRS = (_USER_KEY_DIR, _REPO / "keys", _REPO / "spec")
 
 VALID_MESSAGE = "Signature verified. Receipt chain valid."
 FAIL_MESSAGE = "Verification failed: receipt was modified or signature is invalid."
@@ -90,6 +93,17 @@ def load_public_key(signing_key_id: str, pubkey_path: str | None = None) -> Ed25
             key = serialization.load_pem_public_key(p.read_bytes())
             if not isinstance(key, Ed25519PublicKey):
                 raise VerifyError(f"not an Ed25519 public key: {p}")
+            return key
+    if not pubkey_path:
+        try:
+            raw = package_resources.files("spec").joinpath(
+                f"{signing_key_id}.pem").read_bytes()
+        except (FileNotFoundError, ModuleNotFoundError):
+            pass
+        else:
+            key = serialization.load_pem_public_key(raw)
+            if not isinstance(key, Ed25519PublicKey):
+                raise VerifyError(f"packaged key is not Ed25519: {signing_key_id}")
             return key
     raise VerifyError(
         f"no public key found for signing_key_id={signing_key_id!r} "
