@@ -157,6 +157,129 @@ def test_chain_refuses_invalid_previous_receipt(monkeypatch, tmp_path):
     assert transport.calls == []  # fail-close: chain gate fires before any socket
 
 
+def test_receipt_hashes_loaded_bytes_not_a_re_read(monkeypatch, tmp_path):
+    """Single-read guarantee: the receipt must hash the bytes loaded at run
+    start, even if the payload file is overwritten mid-run before transmission.
+    The transport's first call overwrites both payload files on disk; the
+    signed receipt must still reflect the ORIGINAL content and verify."""
+    _env(monkeypatch)
+    ex = tmp_path / "ex"
+    shutil.copytree(EXAMPLE, ex)
+    payload_a = ex / "provider_a_payload.txt"
+    payload_b = ex / "provider_b_payload.txt"
+    original_a = payload_a.read_text(encoding="utf-8")
+    original_b = payload_b.read_text(encoding="utf-8")
+    from cli.commands import _common as c
+    loaded_sha_a = c.text_sha256(original_a)
+    loaded_sha_b = c.text_sha256(original_b)
+
+    class OverwritingTransport(FakeTransport):
+        def __call__(self, url, headers, body, timeout=None, secrets=(), **_):
+            # corrupt the source files AFTER load, BEFORE this send returns
+            payload_a.write_text("TAMPERED AFTER LOAD A", encoding="utf-8")
+            payload_b.write_text("TAMPERED AFTER LOAD B", encoding="utf-8")
+            return super().__call__(url, headers, body, timeout=timeout,
+                                    secrets=secrets, **_)
+
+    out = tmp_path / "out"
+    transport = OverwritingTransport()
+    code = run_live.run(str(ex), seat_specs=["mock_provider_a=anthropic",
+                                             "mock_provider_b=openai"],
+                        output=str(out), yes=True, transport=transport)
+    assert code == 0
+    # the files on disk are now the tampered content...
+    assert payload_a.read_text(encoding="utf-8") == "TAMPERED AFTER LOAD A"
+    receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
+    verify_receipt(receipt)  # ...but the receipt is self-consistent and verifies
+    events = {e["provider_id"]: e for e in receipt["provider_events"]}
+    # ...and every payload hash is the ORIGINAL loaded content, never the re-read
+    assert events["byok_anthropic_mock_provider_a"]["payload_sha256"] == loaded_sha_a
+    assert events["byok_openai_mock_provider_b"]["payload_sha256"] == loaded_sha_b
+    assert loaded_sha_a != c.text_sha256("TAMPERED AFTER LOAD A")
+
+
+def test_unknown_completion_is_warned_and_signed(monkeypatch, tmp_path, capsys):
+    """A provider that reports no known-complete finish signal (None,
+    vendor-specific, content_filter) must yield completion="unknown" in the
+    signed receipt plus a stderr warning — absence of "length" is not proof
+    of completeness (vLLM/Ollama silently cap output)."""
+    _env(monkeypatch)
+
+    class NoFinishTransport(FakeTransport):
+        def __call__(self, url, headers, body, timeout=None, secrets=(), **_):
+            data = super().__call__(url, headers, body, timeout=timeout,
+                                    secrets=secrets, **_)
+            if "/v1/messages" in url:
+                data["stop_reason"] = None
+            else:
+                data["choices"][0]["finish_reason"] = "content_filter"
+            return data
+
+    out = tmp_path / "out"
+    code = run_live.run(str(EXAMPLE),
+                        seat_specs=["mock_provider_a=anthropic",
+                                    "mock_provider_b=openai"],
+                        output=str(out), yes=True, transport=NoFinishTransport())
+    assert code == 0
+    receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
+    verify_receipt(receipt)
+    for event in receipt["provider_events"]:
+        assert event["completion"] == "unknown"
+        assert event["response_truncated"] is False
+    err = capsys.readouterr().err
+    assert 'completion="unknown"' in err
+    from tests._schema_check import check
+    schema = json.loads((REPO / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
+    assert check(receipt, schema) == []
+
+
+def test_hostile_usage_never_enters_signed_receipt(monkeypatch, tmp_path):
+    """Provider-controlled usage is whitelisted and int-coerced before it can
+    reach a signed artifact; junk shapes are dropped entirely."""
+    _env(monkeypatch)
+
+    class HostileUsageTransport(FakeTransport):
+        def __call__(self, url, headers, body, timeout=None, secrets=(), **_):
+            data = super().__call__(url, headers, body, timeout=timeout,
+                                    secrets=secrets, **_)
+            if "/v1/messages" in url:
+                data["usage"] = "lots"  # non-dict: dropped wholesale
+            else:
+                data["usage"] = {"prompt_tokens": 11, "evil": {"nested": "x" * 999},
+                                 "completion_tokens": "7", "total_tokens": True}
+            return data
+
+    out = tmp_path / "out"
+    code = run_live.run(str(EXAMPLE),
+                        seat_specs=["mock_provider_a=anthropic",
+                                    "mock_provider_b=openai"],
+                        output=str(out), yes=True,
+                        transport=HostileUsageTransport())
+    assert code == 0
+    receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
+    verify_receipt(receipt)
+    events = {e["provider_id"]: e for e in receipt["provider_events"]}
+    assert "usage" not in events["byok_anthropic_mock_provider_a"]  # non-dict
+    survived = events["byok_openai_mock_provider_b"]["usage"]
+    assert survived == {"prompt_tokens": 11}  # str/bool/junk keys all dropped
+
+
+def test_empty_original_fails_closed(monkeypatch, tmp_path):
+    """A zero-length original would make every ratio 0.0 — the run must abort
+    before any accounting (and before any transport) rather than under-report."""
+    import pytest
+    _env(monkeypatch)
+    ex = tmp_path / "ex"
+    shutil.copytree(EXAMPLE, ex)
+    (ex / "input.original.example.txt").write_text("", encoding="utf-8")
+    transport = FakeTransport()
+    with pytest.raises(SystemExit, match="under-report"):
+        run_live.run(str(ex), seat_specs=["mock_provider_a=anthropic",
+                                          "mock_provider_b=openai"],
+                     output=str(tmp_path / "out"), yes=True, transport=transport)
+    assert transport.calls == []
+
+
 def test_truncated_response_is_marked_and_warned(monkeypatch, tmp_path, capsys):
     _env(monkeypatch)
     out = tmp_path / "out"

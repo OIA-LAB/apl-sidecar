@@ -97,9 +97,20 @@ class OpenAICompatAdapter:
         if not isinstance(text, str):
             raise _http.TransportError("openai-compatible response missing message content")
         finish_reason = choices[0].get("finish_reason")
+        # Tri-state honesty: absence of "length" is NOT proof of completeness.
+        # vLLM/Ollama/llama.cpp variants return null or vendor-specific reasons
+        # for silently capped output — those must surface as "unknown", never
+        # masquerade as complete.
+        if finish_reason == "length":
+            completion = "truncated"
+        elif finish_reason == "stop":
+            completion = "complete"
+        else:
+            completion = "unknown"
         return ProviderResponse(
             text=text, provider_id=self.provider_id, model=body["model"],
             metadata={"finish_reason": finish_reason,
-                      "truncated": finish_reason == "length",
+                      "completion": completion,
+                      "truncated": completion == "truncated",
                       "usage": data.get("usage"),
                       "endpoint_host": self.endpoint_host})

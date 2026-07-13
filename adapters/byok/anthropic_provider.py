@@ -87,9 +87,18 @@ class AnthropicAdapter:
         text = "\n".join(b.get("text", "") for b in blocks
                          if isinstance(b, dict) and b.get("type") == "text")
         stop_reason = data.get("stop_reason")
+        # Tri-state honesty: only known-complete stop reasons count as
+        # complete; anything unexpected is "unknown", never silently complete.
+        if stop_reason == "max_tokens":
+            completion = "truncated"
+        elif stop_reason in ("end_turn", "stop_sequence"):
+            completion = "complete"
+        else:
+            completion = "unknown"
         return ProviderResponse(
             text=text, provider_id=self.provider_id, model=body["model"],
             metadata={"stop_reason": stop_reason,
-                      "truncated": stop_reason == "max_tokens",
+                      "completion": completion,
+                      "truncated": completion == "truncated",
                       "usage": data.get("usage"),
                       "endpoint_host": self.endpoint_host})

@@ -20,6 +20,7 @@ import re
 import sys
 from importlib import resources as package_resources
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import serialization
@@ -27,6 +28,47 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 _HEX64 = re.compile(r"^[a-f0-9]{64}$")
 _ULID = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
+# signing_key_id becomes a filename component in load_public_key: a strict
+# allowlist (no separators, no traversal) so a receipt can never direct the
+# verifier to read an attacker-chosen filesystem path.
+_KEY_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+
+# Trust-domain rule, DUPLICATED from cli/commands/_common.py to keep the
+# verifier standalone (only dependency: cryptography). The two implementations
+# MUST stay in lock-step; tests/test_host_normalization.py cross-checks them
+# on a shared host table. Any change here needs the same change there.
+_VENDOR_TRUST_DOMAINS = {
+    "api.anthropic.com": "anthropic",
+    "api.openai.com": "openai",
+}
+_LOOPBACK_HOSTS = {"localhost", "127.0.0.1", "::1"}
+_LOOPBACK_DOMAIN = "loopback"
+
+
+def _normalize_host(endpoint_host: str) -> str:
+    """Canonical host label: lowercase, trailing dot stripped, port removed,
+    IPv6-safe. Mirror of cli/commands/_common.normalize_host."""
+    raw = (endpoint_host or "").strip()
+    if not raw:
+        return ""
+    probe = raw if "://" in raw else "//" + raw
+    try:
+        host = urlsplit(probe).hostname
+    except ValueError:
+        host = None
+    if not host:
+        host = raw
+        if host.count(":") == 1:  # host:port, never bare IPv6 (>=2 colons)
+            host = host.rsplit(":", 1)[0]
+    return host.rstrip(".").lower()
+
+
+def _trust_domain(endpoint_host: str) -> str:
+    """Mirror of cli/commands/_common.trust_domain."""
+    host = _normalize_host(endpoint_host)
+    if host in _LOOPBACK_HOSTS:
+        return _LOOPBACK_DOMAIN
+    return _VENDOR_TRUST_DOMAINS.get(host, host or "unknown")
 
 REQUIRED_FIELDS = (
     "run_id", "task_type", "policy_id", "provider_events",
@@ -75,19 +117,60 @@ def _check_shape(receipt: dict) -> None:
     sig = receipt["signature"]
     if not isinstance(sig, dict) or sig.get("alg") != "Ed25519" or not sig.get("value"):
         raise VerifyError("signature must be {alg: 'Ed25519', value: <base64>}")
+    if not _KEY_ID.match(str(receipt["signing_key_id"])):
+        raise VerifyError("signing_key_id must match [A-Za-z0-9._-]{1,64} "
+                          "(no path separators)")
     for ev in receipt["provider_events"]:
         if not _HEX64.match(str(ev.get("payload_sha256", ""))):
             raise VerifyError("provider_events payload_sha256 malformed")
+        # completion (v0.2 additive) and the legacy boolean must agree.
+        if "completion" in ev:
+            if ev["completion"] not in ("complete", "truncated", "unknown"):
+                raise VerifyError(f"completion {ev['completion']!r} is not one "
+                                  "of complete/truncated/unknown")
+            if "response_truncated" in ev and \
+                    ev["response_truncated"] != (ev["completion"] == "truncated"):
+                raise VerifyError("response_truncated contradicts completion")
     for h in receipt["local_only_hashes"]:
         if not _HEX64.match(str(h.get("sha256", ""))):
             raise VerifyError("local_only_hashes sha256 malformed")
+    # Duplicates fail-close: dict aggregation downstream would silently
+    # collapse repeated ids and let one seat's exposure hide behind another's.
+    _reject_duplicates("provider_events provider_id",
+                       [e.get("provider_id") for e in receipt["provider_events"]])
+    _reject_duplicates("provider_events seat_id",
+                       [e["seat_id"] for e in receipt["provider_events"]
+                        if "seat_id" in e])
+    _reject_duplicates("single_provider_exposure provider_id",
+                       [x.get("provider_id")
+                        for x in receipt["single_provider_exposure"]])
+    _reject_duplicates("trust_domain_exposure trust_domain",
+                       [d.get("trust_domain")
+                        for d in receipt.get("trust_domain_exposure") or []])
+
+
+def _reject_duplicates(label: str, values: list) -> None:
+    if len(values) != len(set(values)):
+        raise VerifyError(f"duplicate {label} — receipts must not repeat ids")
 
 
 def load_public_key(signing_key_id: str, pubkey_path: str | None = None) -> Ed25519PublicKey:
+    if not _KEY_ID.match(str(signing_key_id)):
+        raise VerifyError("signing_key_id must match [A-Za-z0-9._-]{1,64} "
+                          "(no path separators)")
     if pubkey_path:
         candidates = [Path(pubkey_path)]
     else:
-        candidates = [d / f"{signing_key_id}.pem" for d in _KEY_DIRS]
+        # Containment belt-and-suspenders on top of the id allowlist: a
+        # candidate that resolves outside its key directory is never read.
+        candidates = []
+        for d in _KEY_DIRS:
+            p = d / f"{signing_key_id}.pem"
+            try:
+                p.resolve().relative_to(d.resolve())
+            except ValueError:
+                continue
+            candidates.append(p)
     for p in candidates:
         if p.exists():
             key = serialization.load_pem_public_key(p.read_bytes())
@@ -112,18 +195,48 @@ def load_public_key(signing_key_id: str, pubkey_path: str | None = None) -> Ed25
 
 def _check_trust_domain_consistency(receipt: dict) -> None:
     """v0.2 additive fields: when present, the per-trust-domain aggregation
-    must be recomputable from the signed per-seat data. Absent fields (v0.1
-    receipts) skip this check entirely — backward compatible by design."""
-    tde = receipt.get("trust_domain_exposure")
-    if tde is None:
-        return
+    must be recomputable from the signed per-seat data — a receipt cannot
+    declare a trust domain, a seat set, or an aggregate that its own signed
+    events do not support. Absent fields (v0.1 receipts) skip the check that
+    references them — backward compatible by design.
+
+    Re-derived here, each guarded by field presence so legacy mock receipts
+    that lack endpoint_host / trust_domain / seat_ids still verify:
+      0. per-event trust_domain, from endpoint_host via the SAME rule as
+         cli/commands/_common.trust_domain (declared != recomputed -> fail);
+      a. trust_domain_exposure[].seat_ids == the actual seats per domain;
+      b. no_single_trust_domain_received_all_fragments, from the seat sets;
+      c. max_single_seat_exposure, from the per-seat ratios.
+    """
+    events = receipt.get("provider_events", [])
     seat_ratio = {e["provider_id"]: e["exposure_ratio"]
                   for e in receipt.get("single_provider_exposure", [])}
-    seat_domain = {ev.get("seat_id"): ev.get("trust_domain")
-                   for ev in receipt.get("provider_events", [])}
-    seat_by_id = {ev.get("seat_id"): ev.get("provider_id")
-                  for ev in receipt.get("provider_events", [])}
+
+    # (0) endpoint_host -> trust_domain must match the declared trust_domain.
+    # Only enforced for events that actually carry endpoint_host (v0.2+).
+    for ev in events:
+        host = ev.get("endpoint_host")
+        declared = ev.get("trust_domain")
+        if host is None or declared is None:
+            continue
+        recomputed_domain = _trust_domain(str(host))
+        if declared != recomputed_domain:
+            raise VerifyError(
+                f"provider_events trust_domain {declared!r} does not match "
+                f"{recomputed_domain!r} recomputed from endpoint_host "
+                f"{host!r}")
+
+    tde = receipt.get("trust_domain_exposure")
+    if tde is None:
+        # No per-domain aggregation to re-derive. The max_single_seat_exposure
+        # field, if present, is still checkable against per-seat data below.
+        _check_max_single_seat(receipt, events, seat_ratio)
+        return
+
+    seat_domain = {ev.get("seat_id"): ev.get("trust_domain") for ev in events}
+    seat_by_id = {ev.get("seat_id"): ev.get("provider_id") for ev in events}
     recomputed: dict[str, float] = {}
+    recomputed_seats: dict[str, list[str]] = {}
     for seat_id, domain in seat_domain.items():
         if seat_id is None or domain is None:
             raise VerifyError("trust_domain_exposure present but an event lacks "
@@ -132,6 +245,7 @@ def _check_trust_domain_consistency(receipt: dict) -> None:
         if ratio is None:
             raise VerifyError(f"no per-seat exposure recorded for seat {seat_id!r}")
         recomputed[domain] = round(recomputed.get(domain, 0.0) + ratio, 6)
+        recomputed_seats.setdefault(domain, []).append(seat_id)
     claimed = {d["trust_domain"]: d["exposure_ratio"] for d in tde}
     if set(claimed) != set(recomputed):
         raise VerifyError("trust_domain_exposure domains do not match events")
@@ -140,13 +254,47 @@ def _check_trust_domain_consistency(receipt: dict) -> None:
             raise VerifyError(
                 f"trust_domain_exposure for {domain!r} is {ratio}, recomputed "
                 f"{recomputed[domain]} from signed per-seat data")
-    for field, value in (
-            ("max_single_trust_domain_exposure",
-             round(max(recomputed.values(), default=0.0), 6)),
-            ("max_single_provider_exposure",
-             round(max(recomputed.values(), default=0.0), 6))):
+    # (a) declared seat_ids per domain must equal the actual seat sets.
+    for d in tde:
+        if "seat_ids" not in d:
+            continue
+        domain = d["trust_domain"]
+        if set(d["seat_ids"]) != set(recomputed_seats.get(domain, [])):
+            raise VerifyError(
+                f"trust_domain_exposure seat_ids for {domain!r} do not match "
+                f"the seats recorded in provider_events")
+    # (b) no_single_trust_domain_received_all_fragments, from the seat sets.
+    if "no_single_trust_domain_received_all_fragments" in receipt:
+        all_seats = {sid for sid in seat_domain if sid is not None}
+        recomputed_flag = not any(
+            set(seats) == all_seats for seats in recomputed_seats.values())
+        if receipt["no_single_trust_domain_received_all_fragments"] != recomputed_flag:
+            raise VerifyError(
+                "no_single_trust_domain_received_all_fragments is "
+                f"{receipt['no_single_trust_domain_received_all_fragments']}, "
+                f"recomputed {recomputed_flag} from the signed seat sets")
+    for field in ("max_single_trust_domain_exposure", "max_single_provider_exposure"):
+        value = round(max(recomputed.values(), default=0.0), 6)
         if field in receipt and abs(receipt[field] - value) > 1e-6:
             raise VerifyError(f"{field} is {receipt[field]}, recomputed {value}")
+    # (c) max_single_seat_exposure, from the per-seat ratios.
+    _check_max_single_seat(receipt, events, seat_ratio)
+
+
+def _check_max_single_seat(receipt: dict, events: list, seat_ratio: dict) -> None:
+    """max_single_seat_exposure (when present) must equal the largest per-seat
+    exposure recorded in single_provider_exposure. Guarded by field presence
+    so v0.1 receipts without this field are untouched."""
+    if "max_single_seat_exposure" not in receipt:
+        return
+    if not seat_ratio:
+        raise VerifyError("max_single_seat_exposure present but no per-seat "
+                          "exposure recorded")
+    value = round(max(seat_ratio.values(), default=0.0), 6)
+    if abs(receipt["max_single_seat_exposure"] - value) > 1e-6:
+        raise VerifyError(
+            f"max_single_seat_exposure is {receipt['max_single_seat_exposure']}, "
+            f"recomputed {value} from per-seat exposure")
 
 
 def verify_receipt(receipt: dict, pubkey_path: str | None = None) -> None:

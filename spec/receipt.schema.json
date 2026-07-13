@@ -113,6 +113,14 @@
           "response_truncated": {
             "type": "boolean"
           },
+          "completion": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "truncated",
+              "unknown"
+            ]
+          },
           "usage": {
             "type": "object"
           }
@@ -154,16 +162,14 @@
           },
           "exposure_ratio": {
             "type": "number",
-            "minimum": 0,
-            "maximum": 1
+            "minimum": 0
           }
         }
       }
     },
     "max_single_provider_exposure": {
       "type": "number",
-      "minimum": 0,
-      "maximum": 1
+      "minimum": 0
     },
     "no_single_provider_saw_full": {
       "type": "boolean"
@@ -202,7 +208,9 @@
     },
     "signing_key_id": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9._-]{1,64}$"
     },
     "masking_level": {
       "type": "string",
@@ -239,13 +247,11 @@
     },
     "max_single_seat_exposure": {
       "type": "number",
-      "minimum": 0,
-      "maximum": 1
+      "minimum": 0
     },
     "max_single_trust_domain_exposure": {
       "type": "number",
-      "minimum": 0,
-      "maximum": 1
+      "minimum": 0
     },
     "no_single_trust_domain_received_all_fragments": {
       "type": "boolean"

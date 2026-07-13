@@ -56,11 +56,18 @@ Field notes:
   of the payload text after CRLF→LF normalization.
 - `local_only_hashes` — fingerprints of fields that never left the machine.
 - Live runs (`apl run-live`) may add signature-covered optional event fields:
-  `endpoint_host`, `model`, `response_chars`, `response_truncated`, and
-  `usage` (provider-reported token counts). Mock fixtures omit them.
+  `endpoint_host`, `model`, `response_chars`, `response_truncated`,
+  `completion` (`complete` | `truncated` | `unknown` — the tri-state source of
+  truth; `response_truncated` is its legacy boolean projection), and
+  `usage` (provider-reported token counts, whitelisted and int-coerced;
+  provider-asserted, not verified). Mock fixtures omit them.
   Content is NOT in the receipt; only the hash is.
 - `single_provider_exposure[].exposure_ratio` —
-  `characters_sent_to_provider / characters_in_original_input`.
+  `characters_sent_to_provider / characters_in_original_input`. This is a
+  cumulative disclosure ratio, NOT a fraction: a payload that restates or
+  expands shared context can legitimately exceed `1.0`, and per-trust-domain
+  aggregates are sums of seat ratios, so they exceed `1.0` whenever fragments
+  overlap. Capping at 1 would under-report — receipts must never do that.
 - `no_single_provider_saw_full` — true iff no provider payload equals the
   full original input (canonical term; the legacy no-single-cloud underscore vocabulary
   must not appear anywhere -- CI-gated).

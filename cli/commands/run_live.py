@@ -46,6 +46,28 @@ from . import _signing
 KINDS = ("anthropic", "openai")
 RECEIPT_SCHEMA_VERSION = "0.2.0-draft"  # additive fields only; 0.1 receipts stay valid
 
+# Provider-reported usage is provider-asserted, unverified data. Only these
+# keys, coerced to int, may enter the signed receipt — a signed artifact must
+# never lend authority to arbitrary provider-controlled structure.
+_USAGE_KEYS = ("input_tokens", "output_tokens", "total_tokens",
+               "prompt_tokens", "completion_tokens")
+
+
+def _normalize_usage(usage: Any) -> dict[str, int] | None:
+    """Whitelist + int-coerce provider usage; None when nothing survives."""
+    if not isinstance(usage, dict):
+        return None
+    clean: dict[str, int] = {}
+    for key in _USAGE_KEYS:
+        value = usage.get(key)
+        if isinstance(value, bool):  # bool is an int subclass; reject it
+            continue
+        if isinstance(value, int):
+            clean[key] = value
+        elif isinstance(value, float) and value.is_integer():
+            clean[key] = int(value)
+    return clean or None
+
 Transport = Callable[..., dict[str, Any]]
 
 
@@ -96,16 +118,17 @@ def resolve_seats(paths: dict, seat_specs: list[str] | None,
     return {fid: build_seat(mapping[fid], fid, transport) for fid in fragment_ids}
 
 
-def trust_domain_view(paths: dict, seats: dict) -> dict:
+def trust_domain_view(inputs: dict, seats: dict) -> dict:
     """Per-seat and per-trust-domain exposure accounting.
 
     A seat is one fragment sent to one adapter. A trust domain is who
     actually accumulates the fragments (c.trust_domain rule: known vendor
     hosts collapse to the vendor; anything else aggregates by host with the
     port stripped). Ratios are summed per domain; a domain that received
-    every fragment is flagged.
+    every fragment is flagged. Operates on the single-read in-memory buffers
+    so the numbers can never diverge from the transmitted bytes.
     """
-    view = c.exposure_view(paths)
+    view = c.exposure_view_from_texts(inputs["original"], inputs["payloads"])
     per_seat = {}
     domains: dict[str, dict] = {}
     for fid, adapter in seats.items():
@@ -132,7 +155,7 @@ def trust_domain_view(paths: dict, seats: dict) -> dict:
     }
 
 
-def build_receipt_body(paths: dict, seats: dict, responses: dict,
+def build_receipt_body(paths: dict, inputs: dict, seats: dict, responses: dict,
                        prev_hash: str | None = None) -> dict:
     """Live receipt body per RECEIPT_STANDARD v0.2 (additive fields).
 
@@ -146,9 +169,9 @@ def build_receipt_body(paths: dict, seats: dict, responses: dict,
     trust_domain and endpoint_host so the aggregation is recomputable from
     the receipt alone.
     """
-    tview = trust_domain_view(paths, seats)
-    local_only = c.load_local_only(paths)
-    plan = c.load_masking_plan(paths)
+    tview = trust_domain_view(inputs, seats)
+    local_only = inputs["local_only"]
+    plan = inputs["masking_plan"]
     policy = c.load_policy_manifest()
     events, exposures = [], []
     for fid, adapter in seats.items():
@@ -168,13 +191,23 @@ def build_receipt_body(paths: dict, seats: dict, responses: dict,
                  "endpoint_host": adapter.endpoint_host,
                  "model": adapter.model}
         if resp is not None:
-            event["response_truncated"] = bool(resp.metadata.get("truncated"))
-            usage = resp.metadata.get("usage")
+            completion = resp.metadata.get("completion", "unknown")
+            # completion is the source of truth; response_truncated is the
+            # legacy boolean projection (true only for known truncation).
+            event["completion"] = completion
+            event["response_truncated"] = completion == "truncated"
+            usage = _normalize_usage(resp.metadata.get("usage"))
             if usage is not None:
                 event["usage"] = usage
         events.append(event)
         exposures.append({"provider_id": adapter.provider_id,
                           "exposure_ratio": info["exposure_ratio"]})
+    # Fail-close on duplicates before signing: a receipt whose events share a
+    # seat_id/provider_id could hide one seat's exposure behind another's.
+    for label, values in (("seat_id", [e["seat_id"] for e in events]),
+                          ("provider_id", [e["provider_id"] for e in events])):
+        if len(values) != len(set(values)):
+            raise ValueError(f"duplicate {label} in provider events; refusing to sign")
     return {
         "run_id": c.new_ulid(),
         "task_type": plan["task_type"],
@@ -220,8 +253,8 @@ def _same_domain_warnings(tview: dict) -> list[str]:
     return warnings
 
 
-def _preflight(paths: dict, seats: dict) -> None:
-    tview = trust_domain_view(paths, seats)
+def _preflight(paths: dict, inputs: dict, seats: dict) -> None:
+    tview = trust_domain_view(inputs, seats)
     print("=" * 64)
     print(f"APL RUN-LIVE -- {paths['dir'].name} (NETWORK, bring-your-own-key)")
     print("=" * 64)
@@ -243,7 +276,7 @@ def _preflight(paths: dict, seats: dict) -> None:
     for warning in _same_domain_warnings(tview):
         print(warning, file=sys.stderr)
     print("local-only fields never transmitted:",
-          ", ".join(sorted(c.load_local_only(paths))) or "(none)")
+          ", ".join(sorted(inputs["local_only"])) or "(none)")
 
 
 def _confirm(yes: bool) -> bool:
@@ -256,9 +289,9 @@ def _confirm(yes: bool) -> bool:
     return input("\nType 'send' to transmit these payloads, anything else aborts: ") == "send"
 
 
-def _write_combined(out_dir: Path, paths: dict, seats: dict,
+def _write_combined(out_dir: Path, inputs: dict, seats: dict,
                     responses: dict) -> Path:
-    local_only = c.load_local_only(paths)
+    local_only = inputs["local_only"]
     parts = ["# Combined answer (assembled locally)\n"]
     for fid, adapter in seats.items():
         parts.append(f"\n## Fragment `{fid}` — {adapter.provider_id} "
@@ -278,8 +311,15 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
         transport: Transport | None = None, chain: str | None = None) -> int:
     paths = c.example_paths(example_dir)
 
-    # 1. LEAK GATE — same rule as `apl mask`, enforced before any socket opens.
-    leaks = c.leak_findings(paths)
+    # 0. LOAD ONCE — every payload, local_only and masking_plan is read from
+    # disk exactly here. The leak gate, preflight, wire, hashes and receipt
+    # body all consume these same in-memory buffers: a file overwritten after
+    # this point cannot make the receipt disagree with what was transmitted.
+    inputs = c.load_run_inputs(paths)
+
+    # 1. LEAK GATE — same rule as `apl mask`, enforced before any socket opens,
+    # over the very buffers that will be transmitted.
+    leaks = c.leak_findings_from_texts(inputs["local_only"], inputs["payloads"])
     if leaks:
         print("LEAK CHECK FAILED -- refusing to transmit:", file=sys.stderr)
         for leak in leaks:
@@ -307,7 +347,7 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
         return 2
 
     # 2. PRE-FLIGHT + consent (includes per-trust-domain aggregation).
-    _preflight(paths, seats)
+    _preflight(paths, inputs, seats)
     if not _confirm(yes):
         print("Aborted. Nothing was transmitted.")
         return 1
@@ -318,7 +358,7 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
     responses: dict[str, object | None] = {}
     failures = []
     for fid, adapter in seats.items():
-        payload = c.read_text(paths["payloads"][fid])
+        payload = inputs["payloads"][fid]  # the single-read buffer, not a re-read
         try:
             result = adapter.complete(ProviderRequest(prompt=payload, model=adapter.model))
             responses[fid] = result
@@ -326,11 +366,19 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
                 result.text, encoding="utf-8")
             print(f"[seat {fid}] live response received ({len(result.text)} chars)"
                   f" from {adapter.endpoint_host}")
-            if result.metadata.get("truncated"):
+            completion = result.metadata.get("completion", "unknown")
+            if completion == "truncated":
                 print(f"[seat {fid}] WARNING: provider truncated this response"
                       " at its length limit; the receipt records"
                       " response_truncated=true so a partial answer can never"
                       " masquerade as complete.", file=sys.stderr)
+            elif completion == "unknown":
+                reason = result.metadata.get("finish_reason",
+                                             result.metadata.get("stop_reason"))
+                print(f"[seat {fid}] WARNING: provider did not report a"
+                      f" known-complete finish signal ({reason!r}); the"
+                      " receipt records completion=\"unknown\" — treat this"
+                      " answer as possibly incomplete.", file=sys.stderr)
         except TransportError as exc:
             responses[fid] = None
             failures.append(fid)
@@ -340,7 +388,7 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
     # disclosed was disclosed, whether or not an answer came back.
     key, key_id = _signing.ensure_local_keypair()
     receipt = _signing.sign_receipt(
-        build_receipt_body(paths, seats, responses, prev_hash), key, key_id)
+        build_receipt_body(paths, inputs, seats, responses, prev_hash), key, key_id)
     receipt_path = out_dir / "receipt.live.json"
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n",
                             encoding="utf-8")
@@ -350,7 +398,7 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
     import apl_verify  # noqa: E402
     apl_verify.verify_receipt(receipt)  # raises on any failure — fail-close
 
-    combined = _write_combined(out_dir, paths, seats, responses)
+    combined = _write_combined(out_dir, inputs, seats, responses)
     print(f"\nSigned receipt written and verified: {receipt_path}")
     if prev_hash:
         print(f"Chained onto verified receipt {prev_hash[:12]}…"

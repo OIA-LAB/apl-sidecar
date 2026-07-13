@@ -107,7 +107,8 @@ def test_three_distinct_trust_domains(monkeypatch, tmp_path):
     receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
     verify_receipt(receipt)
     domains = {d["trust_domain"]: d for d in receipt["trust_domain_exposure"]}
-    assert set(domains) == {"anthropic", "openai", "127.0.0.1"}
+    # every loopback spelling collapses to one domain label
+    assert set(domains) == {"anthropic", "openai", "loopback"}
     assert all(len(d["seat_ids"]) == 1 for d in domains.values())
     # with one seat per domain, the domain max equals the seat max
     assert receipt["max_single_trust_domain_exposure"] == \
@@ -168,6 +169,117 @@ def test_verifier_rejects_inconsistent_trust_domain_claims(monkeypatch, tmp_path
         _check_trust_domain_consistency(receipt)
     with pytest.raises(VerifyError):  # and the full verifier path fails too
         verify_receipt(receipt)
+
+
+def _fresh_receipt(monkeypatch, tmp_path, specs):
+    _env(monkeypatch)
+    out = tmp_path / "o"
+    assert run_live.run(str(THREE_WAY), seat_specs=specs, output=str(out),
+                        yes=True, transport=FakeTransport()) == 0
+    return json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
+
+
+def test_verifier_rederives_trust_domain_from_endpoint_host(monkeypatch, tmp_path):
+    receipt = _fresh_receipt(monkeypatch, tmp_path,
+                             ["pricing=anthropic", "channel=openai", "risk=openai"])
+    # lie about the domain while leaving the (signed) endpoint_host intact
+    ev = next(e for e in receipt["provider_events"]
+              if e["endpoint_host"] == "api.anthropic.com")
+    ev["trust_domain"] = "openai"
+    with pytest.raises(VerifyError):
+        _check_trust_domain_consistency(receipt)
+
+
+def test_verifier_rederives_seat_ids_per_domain(monkeypatch, tmp_path):
+    receipt = _fresh_receipt(monkeypatch, tmp_path,
+                             ["pricing=openai", "channel=openai", "risk=openai"])
+    # drop a seat from the domain's declared set: the events still list it
+    receipt["trust_domain_exposure"][0]["seat_ids"] = ["pricing"]
+    with pytest.raises(VerifyError):
+        _check_trust_domain_consistency(receipt)
+
+
+def test_verifier_rederives_no_single_domain_flag(monkeypatch, tmp_path):
+    receipt = _fresh_receipt(monkeypatch, tmp_path,
+                             ["pricing=openai", "channel=openai", "risk=openai"])
+    # one vendor got everything, so the honest flag is False; flip it to True
+    assert receipt["no_single_trust_domain_received_all_fragments"] is False
+    receipt["no_single_trust_domain_received_all_fragments"] = True
+    with pytest.raises(VerifyError):
+        _check_trust_domain_consistency(receipt)
+
+
+def test_verifier_rederives_max_single_seat_exposure(monkeypatch, tmp_path):
+    receipt = _fresh_receipt(monkeypatch, tmp_path,
+                             ["pricing=anthropic", "channel=openai", "risk=openai"])
+    receipt["max_single_seat_exposure"] = 0.0  # understate the largest seat
+    with pytest.raises(VerifyError):
+        _check_trust_domain_consistency(receipt)
+
+
+# ------------- exposure is cumulative: ratios may exceed 1.0 ----------
+
+def test_exposure_ratio_over_one_signs_validates_and_verifies(monkeypatch, tmp_path):
+    """A payload that restates/expands context is longer than the original:
+    the per-seat ratio exceeds 1.0 and the same-domain aggregate exceeds it
+    further. The receipt must sign it, the schema must accept it, and the
+    verifier must recompute it — capping at 1 would under-report (ruling b)."""
+    import shutil
+    _env(monkeypatch)
+    ex = tmp_path / "ex"
+    shutil.copytree(LEGACY, ex)
+    original = (ex / "input.original.example.txt").read_text(encoding="utf-8")
+    (ex / "provider_a_payload.txt").write_text(
+        "restated context, longer than the original input. " * 3
+        + "x" * len(original), encoding="utf-8")
+    out = tmp_path / "o"
+    code = run_live.run(str(ex),
+                        seat_specs=["mock_provider_a=openai",
+                                    "mock_provider_b=openai"],
+                        output=str(out), yes=True, transport=FakeTransport())
+    assert code == 0
+    receipt = json.loads((out / "receipt.live.json").read_text(encoding="utf-8"))
+    per_seat = {e["provider_id"]: e["exposure_ratio"]
+                for e in receipt["single_provider_exposure"]}
+    assert per_seat["byok_openai_mock_provider_a"] > 1.0
+    assert receipt["max_single_trust_domain_exposure"] > 1.0
+    verify_receipt(receipt)  # verifier recomputes the >1 aggregate happily
+    schema = json.loads((REPO / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
+    assert not schema_check(receipt, schema)
+
+
+# --------------- duplicates fail-close, never silent collapse ---------
+
+def test_verifier_rejects_duplicate_provider_id(monkeypatch, tmp_path):
+    receipt = _fresh_receipt(monkeypatch, tmp_path,
+                             ["pricing=openai", "channel=openai", "risk=openai"])
+    receipt["single_provider_exposure"].append(
+        dict(receipt["single_provider_exposure"][0]))
+    with pytest.raises(VerifyError, match="duplicate"):
+        verify_receipt(receipt)
+
+
+def test_verifier_rejects_duplicate_seat_id(monkeypatch, tmp_path):
+    receipt = _fresh_receipt(monkeypatch, tmp_path,
+                             ["pricing=openai", "channel=openai", "risk=openai"])
+    receipt["provider_events"][1]["seat_id"] = \
+        receipt["provider_events"][0]["seat_id"]
+    with pytest.raises(VerifyError, match="duplicate"):
+        verify_receipt(receipt)
+
+
+# ------------- signing_key_id can never steer the verifier ------------
+
+def test_signing_key_id_traversal_rejected(monkeypatch, tmp_path):
+    from verifier.apl_verify import load_public_key
+    receipt = _fresh_receipt(monkeypatch, tmp_path,
+                             ["pricing=openai", "channel=openai", "risk=openai"])
+    receipt["signing_key_id"] = "../../../../home/victim/.ssh/id"
+    with pytest.raises(VerifyError, match="signing_key_id"):
+        verify_receipt(receipt)
+    for bad in ("../../evil", "/etc/passwd", "a/b", "a\\b", "x" * 65, ""):
+        with pytest.raises(VerifyError):
+            load_public_key(bad)
 
 
 # ----------------------- offline paths for 3-way ----------------------
