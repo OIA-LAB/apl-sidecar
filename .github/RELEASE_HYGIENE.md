@@ -1,4 +1,4 @@
-# GitHub Sanitization Checklist
+# Release Hygiene Checklist
 
 Every item must be confirmed before any push of this repository.
 This checklist itself ships with the repo as a living gate.
@@ -9,16 +9,15 @@ This checklist itself ships with the repo as a living gate.
 
 ## Content
 
-- [x] No customer data.
-- [x] No private patent data.
-- [x] No golden findings.
-- [x] No internal patent pack templates.
-- [x] No AIP paid workflow templates.
+- [x] No customer or client data of any kind.
+- [x] No customer or client names.
+- [x] No client prompts or client-derived text.
+- [x] No proprietary business data.
+- [x] No internal evaluation assets, answer keys, or benchmark ground truth.
+- [x] No internal product templates or paid product content.
 - [x] No internal metrics.
 - [x] No unstable metrics (nothing published that cannot be recomputed from the repo).
-- [x] No customer names.
-- [x] No client prompts.
-- [x] No private workflow logic (production decomposition rules stay closed).
+- [x] No private production logic (closed-source rules stay closed).
 - [x] All example content is fictional, synthetic, and marked as such.
 
 ## Secrets
