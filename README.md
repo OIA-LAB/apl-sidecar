@@ -11,6 +11,13 @@ Every request to an external AI is a disclosure.
 APL shows what leaves your machine, splits sensitive tasks across providers, stitches the result locally, and gives you a receipt you can verify offline.
 
 ```bash
+pip install apl-sidecar
+apl demo
+```
+
+From source (development):
+
+```bash
 git clone https://github.com/OIA-LAB/apl-sidecar.git
 cd apl-sidecar
 python -m pip install -e .
@@ -43,9 +50,11 @@ The demo is deterministic, uses bundled fictional data and offline mock provider
 Requires Python 3.11 or newer.
 
 ```bash
-python -m pip install -e .
+pip install apl-sidecar
 apl demo
 ```
+
+(From a source checkout, use `python -m pip install -e .` instead.)
 
 APL writes exactly three primary artifacts to `apl-out/`:
 
