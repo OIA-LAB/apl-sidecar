@@ -20,8 +20,25 @@ SECRET_PATTERNS = [
 ]
 
 
+def _git_file_set():
+    """Files git would ship or is about to ship: tracked plus untracked-and-
+    not-ignored, via `git ls-files --cached --others --exclude-standard`.
+
+    Anchoring every hygiene gate to git's own view (instead of a raw rglob)
+    keeps them honest without tripping over local-only noise: .venv/, build
+    artifacts, and other gitignored paths are excluded exactly as they are
+    from a commit. A stray key or forbidden term in a virtualenv can never
+    fail these tests; anything git WOULD ship always can.
+    """
+    import subprocess
+    out = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+        cwd=REPO, capture_output=True, text=True, check=True).stdout
+    return [REPO / line.strip() for line in out.splitlines() if line.strip()]
+
+
 def _iter_files():
-    for f in REPO.rglob("*"):
+    for f in _git_file_set():
         if not f.is_file():
             continue
         parts = set(f.parts)
@@ -55,9 +72,11 @@ def test_no_secret_patterns_anywhere():
 
 
 def test_no_private_keys_committed():
-    # the ONLY .pem files allowed are PUBLIC keys under spec/
-    for f in REPO.rglob("*.pem"):
-        if {".git", "keys"} & set(f.parts):
+    # the ONLY .pem files git ships are PUBLIC keys under spec/. Scan git's own
+    # file set so a private key in a local .venv can't fail us and a private key
+    # git WOULD ship always does. This gate is permanently enabled: no --deselect.
+    for f in _git_file_set():
+        if f.suffix.lower() != ".pem":
             continue
         assert f.parent == REPO / "spec", f"unexpected pem location: {f}"
         text = f.read_text(encoding="utf-8", errors="replace")

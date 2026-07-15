@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+# virtualenvs — never committed
+.venv/
+venv/
+# relicensing scratch (license originals + write smoke); never committed
+_licfetch/
 # local demo signing keys — NEVER committed
 keys/
 *.pem
