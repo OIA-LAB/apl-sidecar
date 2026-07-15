@@ -48,7 +48,56 @@ proceed. See OPEN QUESTIONS for the licensor-spelling note.
 ---
 
 ## Phase 1 — Verifier extraction (Apache-2.0)
-(pending)
+
+New package `packages/apl-verifier/` (Apache-2.0, version 0.2.0):
+- `src/apl_verifier/`: `trust.py` (single normalize_host/trust_domain rule),
+  `receipt.py` (schema constants, canonical bytes, hash, shape/trust-domain
+  checks, `load_public_key` requiring an explicit path, `verify_receipt`/
+  `verify_chain`), `plugins.py` (interface-only planner/provider Protocols,
+  zero implementation), `cli.py` (`apl-verify` console script; `--pubkey`
+  REQUIRED, no repo-relative key/spec search), `__init__.py` (public API).
+- `LICENSE` = byte-exact Apache-2.0 (sha256 `cfc7749b…`), `NOTICE`, `README.md`
+  (states permanent Apache-2.0), `pyproject.toml` (license = "Apache-2.0",
+  no `License ::` classifiers, console script `apl-verify`, dep: cryptography).
+
+Dependency direction (runtime → apl-verifier, never reverse):
+- `cli/commands/_verifier_boot.py` (new bridge): makes `apl_verifier`
+  importable from a source checkout, and keeps KEY-LOCATION policy runtime-side
+  (`resolve_pubkey_path`: user key dir then packaged spec key), passing an
+  explicit path into the pure verifier.
+- `cli/commands/_common.py`: `normalize_host`/`trust_domain`/
+  `VENDOR_TRUST_DOMAINS` now imported from `apl_verifier` — the duplicated copy
+  was DELETED (single source; verified by `test_verifier_host_rule_is_single_source`).
+- `_signing.py`, `verify.py`, `run_live.py` rewired to the package/bridge (no
+  more `sys.path.insert(REPO/"verifier") + import apl_verify`).
+- `cli/commands/_resources.py`: added `spec_key_path()` (path to packaged demo
+  PUBLIC key, wheel-safe).
+
+Deprecated shim: `verifier/apl_verify.py` re-exports the package API, keeps the
+old auto key-resolution for legacy callers, emits `DeprecationWarning`, notes
+v0.3 removal. `verifier/README.md` updated to point at the package.
+
+Isolation tests:
+- (a) static: `packages/apl-verifier/tests/test_isolation.py` — AST scan fails
+  if any `apl_verifier` source imports a runtime module (cli/adapters/relay/
+  app/verifier/apl_verify/examples/spec). PASS.
+- (b) standalone: `packages/apl-verifier/tests/test_verify_standalone.py` —
+  synthetic Apache-licensed fixture (generated at runtime, NO CC BY vectors
+  bundled): valid receipt verifies, tampered rejected, missing/bad key rejected.
+  PASS. (The full clean-venv wheel install is the Phase 6 hard gate.)
+
+Runtime tests repointed to the new architecture (no logic mocked, no
+`--deselect`): auto-resolution tests → `cli.commands._verifier_boot`; pure
+checks → `apl_verifier`. `test_signing_key_id_traversal_rejected` now asserts
+BOTH layers reject a traversal id (bridge before FS, and pure `load_public_key`
+with an explicit key). `test_packaged_public_key_fallback` monkeypatches the
+user key dir empty and confirms the bridge still resolves the packaged spec key.
+
+Evidence: `python -m pytest -q` → **132 passed** (126 baseline + 5 package
+tests + 1 net new single-source test); `-W error::DeprecationWarning` also 132
+passed (no runtime path hits the shim). `ruff check . packages/apl-verifier` →
+All checks passed. Shim manually confirmed to emit DeprecationWarning and still
+verify a committed receipt.
 
 ## Phase 2 — Spec layer (CC BY 4.0)
 (pending)

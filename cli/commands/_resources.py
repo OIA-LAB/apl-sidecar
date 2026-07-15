@@ -73,6 +73,30 @@ def read_spec_bytes(name: str) -> bytes:
     return resources.files("spec").joinpath(name).read_bytes()
 
 
+def spec_key_path(name: str) -> Path:
+    """Filesystem path to a packaged spec asset (e.g. the demo PUBLIC key).
+
+    From a source checkout this is the on-disk spec/ file. From an installed
+    wheel the resource is materialized to a temp file so callers that need a
+    real path (the verifier takes a PEM path, not bytes) always get one.
+    Raises FileNotFoundError when the asset does not exist.
+    """
+    if _source_checkout():
+        source = SOURCE_ROOT / "spec" / name
+        if source.is_file():
+            return source
+        raise FileNotFoundError(name)
+    resource = resources.files("spec").joinpath(name)
+    if not resource.is_file():
+        raise FileNotFoundError(name)
+    temp = tempfile.TemporaryDirectory(prefix="apl-sidecar-key-")
+    _TEMP_RESOURCES.append(temp)
+    target = Path(temp.name) / name
+    with resources.as_file(resource) as file_path:
+        shutil.copyfile(file_path, target)
+    return target
+
+
 def user_key_dir() -> Path:
     configured = os.environ.get("APL_KEY_DIR")
     return Path(configured).expanduser() if configured else Path.home() / ".apl-sidecar" / "keys"

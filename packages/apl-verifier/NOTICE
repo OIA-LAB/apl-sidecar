@@ -1,0 +1,9 @@
+apl-verifier
+Copyright 2026 Yu-Chia Chang (張育嘉)
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This is the independent verification layer of the APL Sidecar project. It is
+distributed separately and remains under the Apache License, Version 2.0. The
+APL runtime that depends on this package is distributed under a different
+license (FSL-1.1-ALv2); that license does not apply to this package.

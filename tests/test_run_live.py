@@ -9,7 +9,7 @@ import shutil
 from pathlib import Path
 
 from cli.commands import run_live
-from verifier.apl_verify import verify_receipt
+from cli.commands._verifier_boot import verify_receipt
 
 REPO = Path(__file__).resolve().parents[1]
 EXAMPLE = REPO / "examples" / "00_private_idea"
@@ -136,7 +136,7 @@ def test_chain_links_runs_into_verifiable_trail(monkeypatch, tmp_path):
     r1 = json.loads((out1 / "receipt.live.json").read_text(encoding="utf-8"))
     r2 = json.loads((out2 / "receipt.live.json").read_text(encoding="utf-8"))
     assert r2["prev_receipt_hash"] == r1["receipt_hash"]
-    from verifier.apl_verify import verify_chain
+    from cli.commands._verifier_boot import verify_chain
     verify_chain([r1, r2])
 
 

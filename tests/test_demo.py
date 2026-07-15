@@ -6,7 +6,8 @@ import socket
 from pathlib import Path
 from cli.apl import main
 from cli.commands import demo
-from verifier.apl_verify import VerifyError, verify_receipt
+from apl_verifier import VerifyError
+from cli.commands._verifier_boot import verify_receipt
 
 
 def test_help_and_demo_artifacts(tmp_path: Path):

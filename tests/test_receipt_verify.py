@@ -1,13 +1,18 @@
-"""Valid receipts and chains must verify; the CLI must agree."""
+"""Valid receipts and chains must verify; the CLI must agree.
+
+Verification lives in the independent apl-verifier package. Receipts here are
+signed by the packaged spec demo key, so these tests go through the runtime
+bridge (cli.commands._verifier_boot), which resolves that key. The bridge in
+turn calls the pure apl_verifier package.
+"""
 import json
-import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "verifier"))
-sys.path.insert(0, str(REPO / "cli"))
+from apl_verifier import VALID_MESSAGE, VerifyError
+from cli.apl import main as apl_main
+from cli.commands import _verifier_boot
 
-import apl_verify  # noqa: E402
+REPO = Path(__file__).resolve().parents[1]
 
 EXAMPLES = [REPO / "examples" / "00_private_idea",
             REPO / "examples" / "01_private_code_context"]
@@ -21,24 +26,24 @@ def _load(p):
 
 def test_example_receipts_verify():
     for ex in EXAMPLES:
-        apl_verify.verify_receipt(_load(ex / "receipt.json"))  # must not raise
+        _verifier_boot.verify_receipt(_load(ex / "receipt.json"))  # must not raise
 
 
 def test_valid_chain_verifies():
-    apl_verify.verify_chain([_load(p) for p in CHAIN])  # must not raise
+    _verifier_boot.verify_chain([_load(p) for p in CHAIN])  # must not raise
 
 
 def test_chain_order_matters():
     import pytest
-    with pytest.raises(apl_verify.VerifyError):
-        apl_verify.verify_chain([_load(CHAIN[1]), _load(CHAIN[0])])
+    with pytest.raises(VerifyError):
+        _verifier_boot.verify_chain([_load(CHAIN[1]), _load(CHAIN[0])])
 
 
 def test_cli_verify_exit_codes(capsys):
-    assert apl_verify.main([str(EXAMPLES[0] / "receipt.json")]) == 0
-    assert apl_verify.VALID_MESSAGE in capsys.readouterr().out
-    assert apl_verify.main([str(p) for p in CHAIN]) == 0
-    assert apl_verify.main([]) == 2
+    assert apl_main(["verify", str(EXAMPLES[0] / "receipt.json")]) == 0
+    assert VALID_MESSAGE in capsys.readouterr().out
+    assert apl_main(["verify", *[str(p) for p in CHAIN]]) == 0
+    assert apl_main(["verify"]) == 2
 
 
 def test_exposure_recomputable_from_payload_files():
