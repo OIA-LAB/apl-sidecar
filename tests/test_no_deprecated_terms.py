@@ -73,13 +73,17 @@ def test_no_secret_patterns_anywhere():
 
 
 def test_no_private_keys_committed():
-    # the ONLY .pem files git ships are PUBLIC keys under spec/. Scan git's own
-    # file set so a private key in a local .venv can't fail us and a private key
-    # git WOULD ship always does. This gate is permanently enabled: no --deselect.
+    # the ONLY .pem files git ships are PUBLIC keys under spec/ (the repo demo
+    # key at spec/, plus frozen conformance keys under spec/conformance/**).
+    # Scan git's own file set so a private key in a local .venv can't fail us and
+    # a private key git WOULD ship always does. The real security property is the
+    # PRIVATE-material check below; the location check is defense-in-depth. This
+    # gate is permanently enabled: no --deselect.
+    spec_dir = REPO / "spec"
     for f in _git_file_set():
         if f.suffix.lower() != ".pem":
             continue
-        assert f.parent == REPO / "spec", f"unexpected pem location: {f}"
+        assert spec_dir in f.parents, f"unexpected pem location: {f}"
         text = f.read_text(encoding="utf-8", errors="replace")
         assert "PRIVATE" not in text, f"private key material in {f}"
 

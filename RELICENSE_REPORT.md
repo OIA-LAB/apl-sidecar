@@ -205,7 +205,87 @@ Word-boundary scan of all tracked text files, excluding basename `LICENSE*`,
 Enforced permanently by `tests/test_relicensing_terms.py` (no --deselect).
 
 ## Phase 6 — Acceptance
-(pending)
+
+### R1-executor independent re-verification (2026-07-16)
+Two defects were caught during independent re-verification and fixed before the
+acceptance commit (not mocks, not `--deselect` — the real safety properties are
+preserved and now correctly cover the frozen conformance key):
+
+1. **`.gitignore` swallowed the frozen conformance public key.** The rule
+   `*.pem` + `!spec/*.pem` un-ignores only the immediate `spec/` dir, so
+   `spec/conformance/v0.1.0/apl-oss-demo-key.pem` was still ignored and would
+   never have committed — silently breaking the Phase-6 hard gate. Added
+   `!spec/conformance/**/*.pem`. Verified the key is a PUBLIC key
+   (`BEGIN PUBLIC KEY`, Ed25519), safe to ship.
+2. **`test_no_private_keys_committed` location check was too narrow.** It
+   asserted every shipped `.pem` sits exactly in `REPO/spec`; the frozen
+   conformance key lives in `spec/conformance/v0.1.0/`. Widened the location
+   assertion to "under `spec/`" (`spec_dir in f.parents`) while keeping the
+   actual security check (`"PRIVATE" not in text`) fully intact.
+
+All Phase-6 evidence below was re-run independently after these fixes:
+`pytest -q` → 136 passed; `ruff` green; both wheels build; offline wheelhouse
+(verifier→runtime) installs; clean-venv `apl demo`/`verify`/`break-receipt`
+behave as baseline; the v0.1.0 conformance pair verifies+rejects
+(`pytest -k v010` → 2 passed, not skipped).
+
+Checklist (work-order Phase 6), each with evidence:
+
+- [x] **Full test suite green** (incl. restored private-key test, SPDX-header
+      test, verifier isolation ×2): `python -m pytest -q` → **136 passed**
+      (130 runtime/tests + 6 apl-verifier package tests). No `--deselect`.
+- [x] **lint green**: `ruff check . packages/apl-verifier` → All checks passed.
+- [x] **forbidden grep = 0** (with exception list): word-boundary scan → only
+      the two ruling-#3 pre-existing `patent` docs remain; gate
+      `tests/test_relicensing_terms.py` enforces it.
+- [x] **verifier version 0.2.0; runtime depends apl-verifier>=0.2.0,<0.3.0**:
+      installed metadata — `apl-verifier` License-Expression Apache-2.0,
+      version 0.2.0; `apl-sidecar` Requires-Dist `apl-verifier<0.3.0,>=0.2.0`.
+- [x] **build two wheels; offline wheelhouse install (verifier then runtime);
+      smoke passes**: both wheels built via `python -m build`; clean venv
+      installed `apl_verifier-0.2.0` then `apl_sidecar-0.2.0` from the local
+      wheelhouse; both resolved in order.
+- [x] **clean venv: runtime apl demo / verify / break-receipt vs baseline**
+      (run from a temp dir OUTSIDE the checkout → exercises the installed
+      wheel): `apl demo` → receipt generated + "Signature verified. Receipt
+      chain valid." (exit 0); `apl verify` → same message (exit 0);
+      `apl break-receipt` → tamper detected, "Verification failed…" (exit 0).
+      Console script `apl-verify`: valid+`--pubkey` exit 0, missing `--pubkey`
+      usage exit 2, tamper exit 1 — matches baseline behaviour.
+- [x] **[HARD GATE] apl-verifier 0.2.0 verifies a REAL v0.1.0 receipt and
+      rejects its tamper; pair frozen as spec/conformance/v0.1.0/**: vectors
+      extracted verbatim from the v0.1.0 tag (`receipt.json` sha256
+      `4d5c5fb2…`, `tampered_receipt.json` sha256 `e5c9d01d…`,
+      `apl-oss-demo-key.pem` sha256 `a97d01d1…`, byte-identical to the current
+      spec key). Real receipt VERIFIED; tamper REJECTED (`receipt_hash
+      mismatch`). Enforced by
+      `packages/apl-verifier/tests/test_v010_conformance.py`.
+- [x] **v0.1.0^{commit} unchanged**: `git rev-parse v0.1.0^{commit}` =
+      `7ea0ac69ccc3774211141d2c705408542429b53d` — identical to Phase 0.
+- [x] **three license source URLs + sha256 + two substitutions**: recorded in
+      "License source provenance" above; FSL substitutions `${year}`→2026,
+      `${licensor name}`→`Yu-Chia Chang (張育嘉)`.
+- [x] **diffstat, Phase 0 isolation list, OPEN QUESTIONS**: below.
+
+### Diffstat (vs base c0049f1, all six phase commits)
+`git diff --stat c0049f1 HEAD`: **85 files changed, ~3079 insertions,
+~487 deletions**. Six commits, exact work-order names:
+- `b1e21ec` chore: quarantine local-only experiments
+- `dcac643` refactor: extract independent verifier package
+- `3868d36` docs: separate specification licensing
+- `5b45e94` chore: apply layered licensing metadata
+- `d6e2c79` docs: add contribution and licensing governance
+- `3f74ff6` chore: sweep licensing wording and add relicensing term gate
+- (Phase 6 acceptance commit follows this report update.)
+
+### Phase 0 isolation list
+No split-local residue existed (isolation = not applicable); nothing was
+quarantined or reverted. Author audit: OIA-LAB (25) + Y.C Chang (1), both YC.
+
+### Scratch cleanup note
+`_licfetch/` (license originals, substitution/SPDX scripts, build wheelhouse,
+smoke venv, write-smoke) is gitignored and never committed. `build/` and
+`dist/` are gitignored. Nothing scratch entered the repo.
 
 ---
 
