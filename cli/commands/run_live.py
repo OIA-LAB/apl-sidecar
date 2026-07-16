@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl run-live -- BYOK reference: send approved payloads to real providers.
 
 The first command in this repo that touches the network, so it earns that

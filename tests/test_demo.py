@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Developer-first demo, offline enforcement, isolation, and tamper tests."""
 import html
 import json

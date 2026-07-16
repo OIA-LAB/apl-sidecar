@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Gate unqualified prohibited privacy claims in primary public files."""
 from pathlib import Path
 

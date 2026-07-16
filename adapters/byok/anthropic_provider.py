@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """BYOK adapter: Anthropic Messages API. Network, your key, off by default.
 
 Configuration is environment-only — a key never appears on a command line

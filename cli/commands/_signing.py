@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Local demo signing for APL Sidecar. Private keys never leave keys/ (gitignored)."""
 from __future__ import annotations
 

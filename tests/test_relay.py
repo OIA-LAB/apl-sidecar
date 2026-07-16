@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """P1 relay prototype — limits, allowlist, fallback, no-key-exposure."""
 import json
 import sys

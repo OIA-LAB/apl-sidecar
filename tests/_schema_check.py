@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Minimal JSON-Schema subset checker (no external dependency).
 
 Supports exactly what spec/*.schema.json uses: type, required, properties,

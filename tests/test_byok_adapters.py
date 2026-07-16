@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """BYOK adapters: offline unit tests. No socket is ever opened here."""
 import pytest
 

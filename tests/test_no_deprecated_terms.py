@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Canonical-vocabulary and secret-hygiene gates for the whole repo."""
 import re
 from pathlib import Path

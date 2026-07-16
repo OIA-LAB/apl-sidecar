@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Wheel-safe bundled resource and documented CLI parser tests."""
 import json
 from pathlib import Path

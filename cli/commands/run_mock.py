@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl run-mock -- run mock providers offline, build and sign a receipt.
 
 Zero network. Loads mock answers via the adapters, accounts exposure, signs a

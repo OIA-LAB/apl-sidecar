@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl verify -- offline receipt verification (schema, hash, signature, chain).
 
 Delegates to the independent apl-verifier package via the runtime bridge, which

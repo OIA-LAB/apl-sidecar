@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Every tamper vector must FAIL verification; the leak-check must pass.
 
 Verification goes through the runtime bridge (auto-resolves the spec demo key);

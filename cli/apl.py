@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """APL Sidecar CLI - local, offline, no API keys.
 
 Usage:

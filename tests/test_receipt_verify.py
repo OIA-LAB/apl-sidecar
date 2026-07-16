@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Valid receipts and chains must verify; the CLI must agree.
 
 Verification lives in the independent apl-verifier package. Receipts here are

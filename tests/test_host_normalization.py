@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Endpoint host normalization + trust-domain derivation.
 
 A port is not an isolation boundary and neither is the spelling of a host:

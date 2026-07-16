@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """DEPRECATED shim — the verifier moved to the independent `apl_verifier`
 package (Apache-2.0) under packages/apl-verifier/.
 

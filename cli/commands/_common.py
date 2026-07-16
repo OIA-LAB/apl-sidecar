@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Shared helpers for APL Sidecar CLI commands. Offline by design."""
 from __future__ import annotations
 

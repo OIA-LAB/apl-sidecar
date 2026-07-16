@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """run-live pipeline tests — fully offline via injected fake transport.
 
 The gate ordering is the contract under test: a leaking plan or a missing

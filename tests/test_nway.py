@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """N-way fragmentation — the ruling's contract under test.
 
 Seats are not providers, providers are not trust domains: the receipt must

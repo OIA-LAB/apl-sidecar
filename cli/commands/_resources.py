@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Wheel-safe access to the small public runtime data bundle."""
 from __future__ import annotations
 

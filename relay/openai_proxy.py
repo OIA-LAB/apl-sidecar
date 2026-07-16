@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Minimal OpenAI-compatible, loopback-only offline mock proxy."""
 from __future__ import annotations
 

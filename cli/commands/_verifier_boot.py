@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Bootstrap + key-resolution bridge to the independent apl-verifier package.
 
 The verification LAYER lives in the separately licensed `apl_verifier` package

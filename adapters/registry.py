@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Explicit provider registry; importing this module never discovers plugins."""
 from __future__ import annotations
 
