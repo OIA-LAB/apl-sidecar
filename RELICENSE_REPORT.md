@@ -153,7 +153,26 @@ canonical vector bytes changed). `ruff` green.
 Evidence: `pytest -q` → 133 passed. `ruff check . packages/apl-verifier` green.
 
 ## Phase 4 — Governance docs
-(pending)
+
+- `LICENSING.md` (new): layer table (spec CC BY 4.0; verifier/SDK Apache-2.0
+  permanent; runtime v0.2+ FSL-1.1-ALv2, each version → Apache-2.0 at 2yr;
+  v0.1.0 MIT historical; planner/evaluator = repo-external commercial) + FAQ
+  (why FSL, why verifier permanently open, v0.1.0 users unaffected). First
+  person singular, factual, no marketing. No forbidden terms.
+- `CONTRIBUTING.md` (updated): added CLA section — code PRs need a signed CLA
+  before merge; discussed in the Issue until then; doc-only typos exempt.
+- `CLA.md` (new): individual CLA adapted from Apache ICLA v2.2. Header line
+  `<!-- LAWYER-REVIEW REQUIRED — not effective until reviewed -->`. Outbound
+  license clause (§4) explicitly covers current FSL distribution AND "the
+  automatic conversion of each distributed version of the runtime to the Apache
+  License, Version 2.0 upon the second anniversary". (Legal-clause terms in
+  CLA.md are a rule-2 exception, so the ICLA's patent-grant language is allowed
+  here and only here.)
+- `CHANGELOG.md` (new): 0.2.0 entry (two-to-three lines on the relicensing,
+  links to LICENSING.md) + a 0.1.0 baseline line. No forbidden terms.
+
+Evidence: `pytest -q` → 133 passed. `ruff` green. Forbidden-term scan of
+LICENSING.md/CONTRIBUTING.md/CHANGELOG.md = 0 hits.
 
 ## Phase 5 — Wording sweep
 (pending)
