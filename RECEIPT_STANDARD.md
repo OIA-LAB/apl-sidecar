@@ -160,3 +160,8 @@ receipts without them (v0.1) remain valid. See docs/fragmentation.md.
 
 `provenance.receipt_schema_version` follows this document. Breaking changes
 bump the minor version while in draft (0.1 → 0.2) and are recorded here.
+
+---
+
+*This document is part of the APL Sidecar specification layer and is licensed
+under [CC BY 4.0](spec/LICENSE). See [spec/README.md](spec/README.md).*

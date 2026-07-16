@@ -100,7 +100,24 @@ All checks passed. Shim manually confirmed to emit DeprecationWarning and still
 verify a committed receipt.
 
 ## Phase 2 — Spec layer (CC BY 4.0)
-(pending)
+
+- `spec/LICENSE` = byte-exact CC BY 4.0 legalcode (sha256 `9ba9550a…`).
+- `spec/README.md` (new): directory-level CC BY notice + index. States the
+  notice covers every file in `spec/` (JSON/YAML vectors and schemas included),
+  and that vectors carry NO inline footer/`license` field because canonical
+  bytes must stay immutable. Declares `conformance_vectors/` the single source
+  of truth that the verifier tests reference from a checkout.
+- `RECEIPT_STANDARD.md` (spec profile narrative, Markdown): CC BY footer
+  appended (footer allowed on Markdown; the JSON/YAML were deliberately left
+  untouched). Kept at repo root — see OPEN QUESTIONS #2 — because README and
+  code doc-comments anchor to that path; physically moving it was judged a
+  risky, non-load-bearing change not spelled out by the work order.
+- The already-present `spec/{receipt.schema.json, policy_manifest.schema.json,
+  demo_policy_manifest.json, conformance_vectors/**, apl-oss-demo-key.pem}` are
+  the field definitions + vectors the work order lists; no bytes changed.
+
+Evidence: `pytest -q` → 132 passed (RECEIPT_STANDARD footer broke nothing; no
+canonical vector bytes changed). `ruff` green.
 
 ## Phase 3 — Runtime relicense (FSL-1.1-ALv2)
 (pending)
@@ -132,6 +149,13 @@ Substitution values (FSL template only): `${year}` → `2026`;
 ---
 
 ## OPEN QUESTIONS
+2. **RECEIPT_STANDARD.md physical location.** The work order says spec/
+   "collects" the receipt profile document. RECEIPT_STANDARD.md is the profile
+   narrative but lives at repo root and is anchored by `README.md` and code
+   doc-comments (`cli/commands/run_live.py`, `_common.py`). It was licensed
+   CC BY 4.0 in place (footer + `spec/README.md` index entry) rather than
+   physically moved, to avoid an out-of-scope, link-breaking move. If you want
+   it physically under `spec/`, that's a follow-up (update the 3 anchors).
 1. **Licensor spelling vs git author.** Ruling #2 (2026-07-16) fixes the
    licensor name as `Yu-Chia Chang (張育嘉)`. The sole git author identity is
    `Y.C Chang <udo.chang@w-flux.com>` (+ the `OIA-LAB` GitHub noreply account).
