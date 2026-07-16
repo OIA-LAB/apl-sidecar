@@ -175,7 +175,34 @@ Evidence: `pytest -q` → 133 passed. `ruff` green. Forbidden-term scan of
 LICENSING.md/CONTRIBUTING.md/CHANGELOG.md = 0 hits.
 
 ## Phase 5 — Wording sweep
-(pending)
+
+MIT / open-source sweep (git-tracked, license files + report excluded):
+
+| Location | Referent | Action |
+| --- | --- | --- |
+| `README.md:5` badge `license: MIT` | runtime (current) | → FSL-1.1-ALv2 badge |
+| `README.md` "open-source Sidecar" (Enterprise Gateway §) | runtime v0.2 | → "Fair Source (FSL-1.1-ALv2) Sidecar" |
+| `README.md` License § "MIT — see LICENSE" | runtime license | → layered summary (FSL runtime / Apache verifier / CC BY spec; v0.1.0 MIT unchanged) |
+| `docs/enterprise_gateway.md:3` "open-source entry point" | runtime | → "Fair Source (FSL-1.1-ALv2) entry point" |
+| `CHANGELOG.md`, `LICENSING.md` "MIT" | **v0.1.0 historical fact** | KEPT (v0.1.0 was MIT; stating history is required, work-order rule 5) |
+| `README.md:270` "v0.1.0 release remains MIT" | v0.1.0 historical | KEPT (same reason) |
+| `examples/00_private_idea/input.original.example.txt:20`, `.../local_only.json:6` "open-source launch" | **fictional scenario GTM** of a made-up startup, not this repo | KEPT (fictional demo content; changing it would falsify the scenario) |
+
+README top now carries a 3-line layered-license summary + LICENSING.md link
+(no marketing sentence added).
+
+### Rule 2 — forbidden-term grep = 0 (with exceptions)
+Word-boundary scan of all tracked text files, excluding basename `LICENSE*`,
+`LICENSES/**`, `CLA.md`, `RELICENSE_REPORT.md`, and this gate's own source:
+
+- **0** newly-introduced forbidden terms.
+- The only `patent` hits remaining are the two ruling-#3 pre-existing ones:
+  `docs/enterprise_gateway.md:10` and `docs/scenario-packs.md:15` (present at
+  v0.1.0, not added by this work). Both allow-listed by the gate.
+- `scripts/smoke_installed_wheel.py:60` "PYTHONPATH" is a substring false
+  positive (contains "NPA"); a word-boundary match excludes it.
+
+Enforced permanently by `tests/test_relicensing_terms.py` (no --deselect).
 
 ## Phase 6 — Acceptance
 (pending)
@@ -224,4 +251,7 @@ Pre-existing hits retained per ruling #3 (既存非新增, not added by this wor
 - `docs/scenario-packs.md:15` — "…legal, financial, patent, customer…" (a list
   of data types that scenario data must NOT be; existed at v0.1.0). Retained.
 
-(To be finalized with the full grep in Phase 5.)
+Finalized in Phase 5: word-boundary grep confirms these are the ONLY two
+`patent` hits outside license/CLA/report; zero new forbidden terms introduced.
+The `scripts/smoke_installed_wheel.py` "PYTHONPATH" substring is a false
+positive (not the token NPA). Gate: `tests/test_relicensing_terms.py`.
