@@ -242,9 +242,12 @@ Checklist (work-order Phase 6), each with evidence:
       installed metadata — `apl-verifier` License-Expression Apache-2.0,
       version 0.2.0; `apl-sidecar` Requires-Dist `apl-verifier<0.3.0,>=0.2.0`.
 - [x] **build two wheels; offline wheelhouse install (verifier then runtime);
-      smoke passes**: both wheels built via `python -m build`; clean venv
-      installed `apl_verifier-0.2.0` then `apl_sidecar-0.2.0` from the local
-      wheelhouse; both resolved in order.
+      smoke passes** — **已驗證 (reproduced 2026-07-18, evidence in
+      "Offline wheelhouse install — verified run" below)**: both wheels built
+      via `python -m build`; a clean venv installed `apl_verifier-0.2.0` then
+      `apl_sidecar-0.2.0` from the local wheelhouse with
+      `pip install --no-index --find-links <wheelhouse>`; both resolved in
+      order with the runtime's `apl-verifier<0.3.0,>=0.2.0` satisfied offline.
 - [x] **clean venv: runtime apl demo / verify / break-receipt vs baseline**
       (run from a temp dir OUTSIDE the checkout → exercises the installed
       wheel): `apl demo` → receipt generated + "Signature verified. Receipt
@@ -266,6 +269,49 @@ Checklist (work-order Phase 6), each with evidence:
       "License source provenance" above; FSL substitutions `${year}`→2026,
       `${licensor name}`→`Yu-Chia Chang (張育嘉)`.
 - [x] **diffstat, Phase 0 isolation list, OPEN QUESTIONS**: below.
+
+### Offline wheelhouse install — verified run (2026-07-18)
+Previously the offline-wheelhouse path was asserted but not independently
+reproduced with a recorded artifact manifest (marked `[unverified]` in the
+FINAL work order, Task A). It is now **已驗證 / verified** end-to-end on a
+disconnected-equivalent flow (`pip --no-index`, so no index was contacted):
+
+**Wheelhouse** = `D:\apl\_wheelhouse_20260718\` (outside the worktree; not
+committed). Built with `python -m build` (both packages) + `pip download
+cryptography PyYAML` for transitive deps. Full sha256 manifest saved to
+`D:\apl\_wheelhouse_20260718\SHA256SUMS.txt`:
+
+| File | sha256 |
+| --- | --- |
+| `apl_verifier-0.2.0-py3-none-any.whl` | `c02b172185166a456d2d70713f194738a56bd27981663093e397b7462bbeacd9` |
+| `apl_sidecar-0.2.0-py3-none-any.whl` | `05914a55e77bd5ed861b27fec8d5d7d1e0aff53419e663118e44648d7d46bd9b` |
+| `cryptography-49.0.0-cp311-abi3-win_amd64.whl` | `e5dfc1e64de5677cec922ffa8da89c546d0415bf6efdf081842e5d44c84e1f0e` |
+| `cffi-2.1.0-cp312-cp312-win_amd64.whl` | `c97f080ea627e2863524c5af3836e2270b5f5dfff1f104392b959f8df0c5d384` |
+| `pycparser-3.0-py3-none-any.whl` | `b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992` |
+| `pyyaml-6.0.3-cp312-cp312-win_amd64.whl` | `5fcd34e47f6e0b794d17de1b4ff496c00986e1c83f7ab2fb8fcfe9616ff7477b` |
+| `apl_verifier-0.2.0.tar.gz` | `cfc298b05ce4b1ce07bbab03a0022bb5be182324dc20a73ab68413d8155d0548` |
+| `apl_sidecar-0.2.0.tar.gz` | `3cc19e24413abe9da71cf47148e11f921bc5ca49351e1e4515565200a99d9cfb` |
+
+**Install order (the verification point):** clean venv → `apl-verifier` first,
+then `apl-sidecar`, both `--no-index --find-links`. Verifier install pulled
+only wheelhouse wheels (`pycparser, cffi, cryptography, apl-verifier`); the
+runtime install then reported `apl-verifier<0.3.0,>=0.2.0` **already
+satisfied** and added `PyYAML, apl-sidecar` — no network, correct order.
+
+**Smoke (run from `D:\apl\_wh_work_20260718\`, OUTSIDE the checkout, so the
+installed wheels are exercised, not the source tree):**
+
+| Check | Command | Result | Exit |
+| --- | --- | --- | --- |
+| demo | `apl demo` | "Signature verified. Receipt chain valid."; wrote `assessment.md` + `exposure.html` + `receipt.json` | 0 |
+| verify | `apl verify apl-out/receipt.json` | "Signature verified. Receipt chain valid." | 0 |
+| break-receipt | `apl break-receipt apl-out/receipt.json` | tamper detected: "receipt_hash mismatch (content was modified)" | 0 |
+| v0.1.0 real | `apl verify spec/conformance/v0.1.0/receipt.json --pubkey …/apl-oss-demo-key.pem` | "Signature verified. Receipt chain valid." | 0 |
+| v0.1.0 tamper | `apl verify …/tampered_receipt.json --pubkey …` | REJECTED: "receipt_hash mismatch" | 1 |
+
+Independent Apache verifier console script cross-check (same frozen vectors):
+`apl-verify …/receipt.json --pubkey …` → verified (0); `…/tampered_receipt.json`
+→ rejected (1); missing `--pubkey` → usage (2). Matches baseline behaviour.
 
 ### Diffstat (vs base c0049f1, all six phase commits)
 `git diff --stat c0049f1 HEAD`: **85 files changed, ~3079 insertions,
@@ -305,6 +351,20 @@ Substitution values (FSL template only): `${year}` → `2026`;
 ---
 
 ## OPEN QUESTIONS
+3. **LICENSING.md trips the forbidden-term gate at this branch tip (pre-existing,
+   NOT from Task A).** During Task A verification I ran
+   `pytest tests/test_relicensing_terms.py` and it FAILS at `bac50e5` — with my
+   report-only edit stashed the failure is identical, so it is not introduced by
+   this offline-wheelhouse work. Cause: `LICENSING.md` (Phase 4) contains an FSL
+   "patent license" FAQ (lines ~44-55) describing the FSL license's own
+   patent-grant/termination clauses, but `LICENSING.md` is not in the gate's
+   allow-list (`ALLOWED_EXACT`/`ALLOWED_PATH_PREFIXES` cover only `LICENSE*`,
+   `LICENSES/`, `CLA.md`, `RELICENSE_REPORT.md`, and the two pre-existing
+   `docs/` prose hits). Phase 4's "forbidden-term scan of LICENSING.md = 0 hits"
+   (line ~175) is inconsistent with the committed file + gate. Not fixed here:
+   resolving it means editing either `LICENSING.md` (licensing-substantive text)
+   or the gate's allow-list — both outside Task A's authorized scope. Needs a
+   ruling: allow-list `LICENSING.md` as a legal-clause file, or reword the FAQ.
 2. **RECEIPT_STANDARD.md physical location.** The work order says spec/
    "collects" the receipt profile document. RECEIPT_STANDARD.md is the profile
    narrative but lives at repo root and is anchored by `README.md` and code
