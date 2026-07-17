@@ -77,6 +77,11 @@ You expressly agree that Your Contributions to the runtime may be distributed
 under FSL-1.1-ALv2 and, upon each such version's two-year anniversary, under the
 Apache License, Version 2.0, on the same terms as the rest of that version.
 
+Provided that any future outbound license shall not derogate from the rights
+already granted to downstream recipients under Section 2, and shall be limited
+to licenses that are OSI-approved or source-available with an ALv2 (or more
+permissive) future grant.
+
 ## 5. Representations
 
 You represent that You are legally entitled to grant the above licenses. If Your
@@ -117,6 +122,45 @@ MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
 You agree to notify the Licensor of any facts or circumstances of which You
 become aware that would make these representations inaccurate in any respect.
 
+## 9. Assignability and Successors
+
+The Licensor may assign this Agreement and all licenses and rights granted
+herein, in whole or in part, to any successor to the Project or to any entity
+that the Licensor forms or that acquires the Project's assets, without further
+consent from You. This Agreement binds and inures to the benefit of the parties
+and their respective successors and permitted assigns.
+
+## 10. Moral Rights (著作人格權)
+
+To the maximum extent permitted by applicable law, You agree not to assert any
+moral rights (著作人格權) You may hold in Your Contributions — including rights
+of attribution and integrity — against the Licensor, the Licensor's licensees,
+and downstream recipients of software distributed by the Licensor, insofar as
+such assertion would prevent the exercise of the licenses granted in Sections 2
+and 4. This is an agreement not to assert such rights; it is not, and shall not
+be construed as, an assignment or waiver of moral rights. Where applicable law
+(including Article 21 of the Copyright Act of Taiwan / 中華民國著作權法第21條)
+provides that moral rights are inalienable and may not be assigned or waived,
+this Section takes effect solely as a covenant not to assert those rights to the
+extent the law permits.
+
+## 11. Governing Law, Venue, and Language
+
+This Agreement is governed by and construed in accordance with the laws of
+Taiwan (the Republic of China), without regard to its conflict-of-laws rules.
+The parties submit to the exclusive jurisdiction of the Intellectual Property
+and Commercial Court of Taiwan, and, where that court does not have competence,
+the Taipei District Court, for any dispute arising out of or relating to this
+Agreement. This Section governs only this Agreement between You and the
+Licensor; it does not attach to, and has no effect on, the Project's outbound
+open-source licenses (FSL-1.1-ALv2, the Apache License 2.0, or CC BY 4.0), which
+carry no venue or choice-of-law terms.
+
+This Agreement may be provided in English and Chinese. In the event of any
+conflict or ambiguity between the two language versions, the English version
+governs, consistent with the outbound license texts, which are authoritative in
+English.
+
 ---
 
 Signed:
@@ -125,3 +169,10 @@ Signed:
 - GitHub username: ______________________________
 - Date: ______________________________
 - Signature: ______________________________
+
+Signature and date will be evidenced by an independent time anchor — a CLA
+signing bot (e.g. CLA-assistant, recording the GitHub identity and signing
+time) or an independent trusted timestamp (RFC-3161 / OpenTimestamps) applied
+to the signed Agreement and its manifest — so that the content and time of
+signing can be shown reliably and are not established by a self-recomputable
+hash alone.

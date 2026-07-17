@@ -40,3 +40,21 @@ depend on v0.1.0 under MIT, you keep those terms.
 Yes. The specification is CC BY 4.0 — reuse it with attribution. The
 conformance vectors under `spec/conformance_vectors/` are the shared reference
 your implementation can test against.
+
+**What patent license do I get during the FSL period?**
+For the first two years after a runtime version is made available, the patent
+license is the narrow FSL Patents grant — limited to a Permitted Purpose, with a
+broad termination trigger. Two years after that version's release date, its
+Grant of Future License takes effect and you receive the full Apache-2.0
+Section 3 patent license for that version. The two periods run in sequence, not
+in conflict. The licensor currently holds no issued patents; the patent clauses
+grant whatever the licensor may hold and are not a representation that any
+patent covers the Software.
+
+**If the FSL patent license is terminated, does that kill my future Apache-2.0 patent rights?**
+No. The FSL Patents termination, if triggered, ends only the patent license
+under the FSL-period License Grant. It does not revoke the Apache-2.0 Future
+License, which is granted separately and irrevocably now and takes effect on the
+second anniversary of each version's release date. The FSL-period grant and the
+Apache-2.0 Future License are two independent grants; terminating the first does
+not reach the second.

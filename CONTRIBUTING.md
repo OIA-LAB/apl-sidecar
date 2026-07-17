@@ -22,6 +22,16 @@ Issue but will not merge it. This keeps the layered licensing in
 [LICENSING.md](LICENSING.md) coherent — including the automatic Apache-2.0
 conversion of each runtime release two years after its release date.
 
+If you have not signed the CLA, please do not paste code intended for inclusion
+in an Issue; describe it or use pseudocode instead. Code posted in an Issue by an
+unsigned contributor will not be adopted; the maintainer follows a clean-room
+discipline (does not read, take, or reuse it) and reserves the right to
+independently reimplement.
+
+CLA signatures are recorded with an independent time anchor (a CLA signing bot,
+or an RFC-3161 / OpenTimestamps trusted timestamp) so the signing identity and
+time are evidenced independently, not by a self-recomputable hash alone.
+
 Documentation-only fixes (typos, broken links, clarifications) are exempt and
 can be merged without a CLA.
 
