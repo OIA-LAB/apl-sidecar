@@ -62,3 +62,12 @@ not reach the second.
 **Can I contribute code now? Is the CLA final?**
 The CLA is currently under legal review; code contributions are not accepted
 until review completes.
+
+**Why does PyPI show the license as `LicenseRef-FSL-1.1-ALv2`?**
+The runtime license is FSL-1.1-ALv2 (full text in [LICENSE](LICENSE)). The PyPI
+package metadata encodes it as `LicenseRef-FSL-1.1-ALv2` — the SPDX-standard way
+to reference a license not yet in the SPDX license list. This is a
+metadata-encoding detail only; your rights are exactly those of FSL-1.1-ALv2. It
+reverts to the plain `FSL-1.1-ALv2` identifier once the publishing toolchain's
+SPDX list includes it (tracked in
+[RESTORE_CANONICAL_ID.md](RESTORE_CANONICAL_ID.md)).
