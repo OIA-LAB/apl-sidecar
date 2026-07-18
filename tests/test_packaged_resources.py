@@ -88,10 +88,22 @@ def test_release_workflow_reuses_smoked_distributions():
     assert 'tags: ["v*"]' in workflow
     assert "id-token: write" in workflow
     assert "environment: pypi" in workflow
-    assert "installed-wheel-smoke:" in workflow
-    assert "needs: build" in workflow
-    assert "needs: installed-wheel-smoke" in workflow
+    # Dual-package pipeline: apl-verifier publishes before apl-sidecar.
+    assert "verifier-build:" in workflow
+    assert "verifier-publish:" in workflow
+    assert "sidecar-build:" in workflow
+    assert "sidecar-installed-wheel-smoke:" in workflow
+    assert "sidecar-publish:" in workflow
+    # Hard ordering gate: the sidecar only builds after the verifier is live,
+    # because the sidecar installed-wheel smoke pip-resolves apl-verifier.
+    assert "needs: verifier-publish" in workflow
+    # Sidecar publish reuses the exact smoked distributions (no rebuild between
+    # smoke and publish): smoke needs the build, publish needs the smoke.
+    assert "needs: sidecar-build" in workflow
+    assert "needs: sidecar-installed-wheel-smoke" in workflow
     assert "actions/upload-artifact@v4" in workflow
-    assert workflow.count("actions/download-artifact@v4") == 2
+    # One download-artifact per: verifier-publish, sidecar smoke, sidecar-publish.
+    assert workflow.count("actions/download-artifact@v4") == 3
     assert "python scripts/smoke_installed_wheel.py dist" in workflow
     assert "packages-dir: dist/" in workflow
+    assert "packages-dir: dist-verifier/" in workflow
