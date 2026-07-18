@@ -23,6 +23,7 @@ receipt.local.json
 # build backends' output (setuptools / python -m build)
 build/
 dist/
+dist-verifier/
 apl-out/
 apl-live-out/
 receipt.live.json

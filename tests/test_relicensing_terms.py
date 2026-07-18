@@ -1,12 +1,20 @@
 # SPDX-License-Identifier: FSL-1.1-ALv2
-"""Rule-2 relicensing vocabulary gate.
+"""Rule-2 relicensing vocabulary gate (term-scoped).
 
-The relicensing must not introduce the forbidden terms (patent, patent-pending,
-PPA, NPA, trademark symbols) anywhere except genuine license text and the CLA's
-legal clauses. Two pre-existing `patent` mentions in the docs (present at
-v0.1.0) are explicitly allow-listed — they were not added by the relicensing.
-Terms are matched on word boundaries so substrings like PYTHONPATH do not count.
-No --deselect: always on.
+Assertion terms -- "patent-pending", "PPA", "NPA", and the trademark symbols
+-- must not appear anywhere in the tree, with no per-file exception, save two
+narrow classes: (a) genuine verbatim license text, and (b) the two meta-
+documents that must name the terms in order to describe or detect them (this
+gate's own source and RELICENSE_REPORT.md).
+
+The bare word "patent" is NOT an assertion term and is permitted everywhere:
+it is ordinary legal explanation (e.g. LICENSING.md's FSL/Apache patent-grant
+FAQ, or the CLA's patent-license grant). So LICENSING.md, CLA.md and general
+docs are scanned with no exception -- an authored legal file is exactly the
+door that must stay watched -- yet their bare "patent" usages pass.
+
+Terms are matched on word boundaries so substrings like PYTHONPATH do not
+count. No --deselect: always on.
 """
 import re
 import subprocess
@@ -14,30 +22,24 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 
-# Word-boundary term match (™ and (TM) handled separately — not \w tokens).
-_TERM = re.compile(r"\bpatent(?:-pending)?\b|\bPPA\b|\bNPA\b", re.IGNORECASE)
-_SYMBOLS = ("™", "(TM)")  # ™, (TM)
+# Assertion terms only. The bare word "patent" is intentionally absent -- it is
+# a legal-explanation word, permitted everywhere. (The trademark symbols are not
+# \w tokens, so they are checked separately below.)
+_TERM = re.compile(r"\bpatent-pending\b|\bPPA\b|\bNPA\b", re.IGNORECASE)
+_SYMBOLS = ("™", "(TM)")
 
 TEXT_SUFFIXES = {".py", ".md", ".json", ".yaml", ".yml", ".txt", ".html",
                  ".css", ".js", ".toml", ".cfg", ".ini"}
 
-# Exceptions (work-order rule 2): license text, the CLA legal clauses, and the
-# report's own filename references. Plus two pre-existing doc mentions.
-#
-# Principle: assertion terms (patent-pending, PPA, NPA, and the TM symbols) are
-# zero-tolerance everywhere except official license full text; the bare word
-# "patent", used in legal explanation, is NOT forbidden. LICENSING.md is
-# allow-listed on that basis -- its FAQ explains how the FSL-period and
-# Apache-2.0 patent grants relate, using only the bare word "patent" (it carries
-# no assertion terms).
+# Exceptions are deliberately minimal. Assertion terms are zero-tolerance in
+# authored docs -- LICENSING.md, CLA.md and general docs are all scanned, on
+# purpose. Only two classes are exempt:
+#   (1) genuine verbatim license text (upstream, not authored here);
+#   (2) the two meta-documents that must literally name the terms: this gate's
+#       own source, and RELICENSE_REPORT.md (which discusses the PPA/NPA tokens).
 ALLOWED_PATH_PREFIXES = ("LICENSES/", "packages/apl-verifier/LICENSE")
-ALLOWED_EXACT = {"CLA.md", "RELICENSE_REPORT.md", "LICENSING.md",
-                 # this gate's own source names the forbidden terms to detect them
+ALLOWED_EXACT = {"RELICENSE_REPORT.md",
                  "tests/test_relicensing_terms.py"}
-ALLOWED_PREEXISTING = {
-    ("docs/enterprise_gateway.md", "patent"),   # v0.1.0 prose, not added here
-    ("docs/scenario-packs.md", "patent"),       # v0.1.0 prose, not added here
-}
 
 
 def _tracked_text_files():
@@ -62,11 +64,8 @@ def test_no_new_forbidden_terms():
     for rel, p in _tracked_text_files():
         text = p.read_text(encoding="utf-8", errors="replace")
         for m in _TERM.finditer(text):
-            term = m.group(0).lower()
-            if (rel, term) in ALLOWED_PREEXISTING:
-                continue
             offenders.append(f"{rel}: {m.group(0)!r}")
         for sym in _SYMBOLS:
             if sym in text:
                 offenders.append(f"{rel}: {sym!r}")
-    assert not offenders, "forbidden relicensing terms:\n" + "\n".join(offenders)
+    assert not offenders, "forbidden assertion terms:\n" + "\n".join(offenders)
