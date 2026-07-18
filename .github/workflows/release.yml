@@ -1,8 +1,15 @@
 name: Release to PyPI
 
 # Trusted publishing: no API token is ever created or stored anywhere.
-# Configure the PyPI trusted publisher for owner OIA-LAB, repository
-# apl-sidecar, workflow release.yml, environment pypi before the first tag.
+# TWO packages are published from this repo, in a hard order:
+#   1. apl-verifier  (packages/apl-verifier, Apache-2.0, no sidecar dep)
+#   2. apl-sidecar   (repo root, depends on apl-verifier>=0.2.0,<0.3.0)
+# apl-verifier MUST reach PyPI first because the sidecar installed-wheel
+# smoke test resolves apl-verifier from PyPI at install time.
+# Configure TWO PyPI trusted publishers before the first v0.2.0 tag
+# (see private-data/RELEASE_YML_DRAFT_20260717.md section 2):
+#   - apl-verifier : repo apl-sidecar / workflow release.yml / env pypi
+#   - apl-sidecar  : repo apl-sidecar / workflow release.yml / env pypi
 
 on:
   push:
@@ -12,7 +19,43 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  # ---------- Package 1: apl-verifier (publishes FIRST) ----------
+  verifier-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build
+      - run: python -m build packages/apl-verifier --outdir dist-verifier
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verifier-distributions
+          path: dist-verifier/
+          if-no-files-found: error
+
+  verifier-publish:
+    needs: verifier-build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: verifier-distributions
+          path: dist-verifier/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-verifier/
+
+  # ---------- Package 2: apl-sidecar (runtime, publishes AFTER) ----------
+  # `needs: verifier-publish` is the hard ordering gate: the sidecar smoke
+  # test installs the sidecar wheel and pip-resolves apl-verifier from PyPI,
+  # so verifier must already be live before this runs.
+  sidecar-build:
+    needs: verifier-publish
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,12 +66,12 @@ jobs:
       - run: python -m build
       - uses: actions/upload-artifact@v4
         with:
-          name: distributions
+          name: sidecar-distributions
           path: dist/
           if-no-files-found: error
 
-  installed-wheel-smoke:
-    needs: build
+  sidecar-installed-wheel-smoke:
+    needs: sidecar-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,12 +80,12 @@ jobs:
           python-version: "3.12"
       - uses: actions/download-artifact@v4
         with:
-          name: distributions
+          name: sidecar-distributions
           path: dist/
       - run: python scripts/smoke_installed_wheel.py dist
 
-  publish:
-    needs: installed-wheel-smoke
+  sidecar-publish:
+    needs: sidecar-installed-wheel-smoke
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -50,7 +93,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: distributions
+          name: sidecar-distributions
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
