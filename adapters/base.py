@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Provider adapter contract shared by offline and future network providers."""
 from __future__ import annotations
 

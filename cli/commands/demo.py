@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """One-command deterministic offline demo using canonical APL components."""
 from __future__ import annotations
 import hashlib

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl inspect -- show exposure accounting and provenance from a receipt."""
 from __future__ import annotations
 

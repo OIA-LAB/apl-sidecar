@@ -1,15 +1,20 @@
-"""Every tamper vector must FAIL verification; the leak-check must pass."""
+# SPDX-License-Identifier: FSL-1.1-ALv2
+"""Every tamper vector must FAIL verification; the leak-check must pass.
+
+Verification goes through the runtime bridge (auto-resolves the spec demo key);
+the CLI failure path is exercised via `apl verify`.
+"""
 import json
-import sys
 from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "verifier"))
-sys.path.insert(0, str(REPO / "cli"))
+from apl_verifier import FAIL_MESSAGE, VerifyError
+from cli.apl import main as apl_main
+from cli.commands import _verifier_boot
+from cli.commands import mask
 
-import apl_verify  # noqa: E402
+REPO = Path(__file__).resolve().parents[1]
 
 TV = REPO / "spec" / "conformance_vectors" / "tamper_vectors"
 
@@ -25,8 +30,8 @@ def _load(p):
     "tamper_signature_removed.json",
 ])
 def test_tamper_vector_fails(name):
-    with pytest.raises(apl_verify.VerifyError):
-        apl_verify.verify_receipt(_load(TV / name))
+    with pytest.raises(VerifyError):
+        _verifier_boot.verify_receipt(_load(TV / name))
 
 
 def test_all_four_vectors_exist():
@@ -35,25 +40,24 @@ def test_all_four_vectors_exist():
 
 @pytest.mark.parametrize("ex", ["00_private_idea", "01_private_code_context"])
 def test_example_tampered_receipt_fails(ex):
-    with pytest.raises(apl_verify.VerifyError):
-        apl_verify.verify_receipt(
+    with pytest.raises(VerifyError):
+        _verifier_boot.verify_receipt(
             _load(REPO / "examples" / ex / "tampered_receipt.example.json"))
 
 
 def test_cli_reports_failure_message(capsys):
-    code = apl_verify.main([str(TV / "tamper_payload_changed.json")])
+    code = apl_main(["verify", str(TV / "tamper_payload_changed.json")])
     assert code == 1
-    assert apl_verify.FAIL_MESSAGE in capsys.readouterr().out
+    assert FAIL_MESSAGE in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("ex", ["00_private_idea", "01_private_code_context"])
 def test_mask_leak_check_passes(ex):
-    from commands import mask
     assert mask.run(str(REPO / "examples" / ex)) == 0
 
 
 def test_single_byte_flip_fails():
     r = _load(REPO / "examples" / "00_private_idea" / "receipt.json")
     r["provenance"]["example_id"] = r["provenance"]["example_id"] + "x"
-    with pytest.raises(apl_verify.VerifyError):
-        apl_verify.verify_receipt(r)
+    with pytest.raises(VerifyError):
+        _verifier_boot.verify_receipt(r)

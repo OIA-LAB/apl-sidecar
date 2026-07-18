@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Create a one-field tampered receipt copy and prove canonical verification fails."""
 from __future__ import annotations
 import json

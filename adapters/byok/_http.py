@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Minimal JSON POST transport for BYOK adapters. Stdlib only, fail-close.
 
 Design rules (mirrors the receipt philosophy: evidence over trust):

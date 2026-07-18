@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl run-live -- BYOK reference: send approved payloads to real providers.
 
 The first command in this repo that touches the network, so it earns that
@@ -42,6 +43,7 @@ from adapters.byok.openai_provider import OpenAICompatAdapter
 
 from . import _common as c
 from . import _signing
+from . import _verifier_boot
 
 KINDS = ("anthropic", "openai")
 RECEIPT_SCHEMA_VERSION = "0.2.0-draft"  # additive fields only; 0.1 receipts stay valid
@@ -329,11 +331,9 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
     # 1b. CHAIN GATE — refuse to chain onto a receipt that does not verify.
     prev_hash = None
     if chain:
-        sys.path.insert(0, str(c.REPO / "verifier"))
-        import apl_verify  # noqa: E402
         try:
             prev = json.loads(Path(chain).read_text(encoding="utf-8"))
-            apl_verify.verify_receipt(prev)
+            _verifier_boot.verify_receipt(prev)
         except Exception as exc:  # noqa: BLE001 — any failure refuses the chain
             print(f"CHAIN REFUSED -- previous receipt invalid: {exc}", file=sys.stderr)
             return 1
@@ -393,10 +393,7 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n",
                             encoding="utf-8")
 
-    repo_root = c.REPO
-    sys.path.insert(0, str(repo_root / "verifier"))
-    import apl_verify  # noqa: E402
-    apl_verify.verify_receipt(receipt)  # raises on any failure — fail-close
+    _verifier_boot.verify_receipt(receipt)  # raises on any failure — fail-close
 
     combined = _write_combined(out_dir, inputs, seats, responses)
     print(f"\nSigned receipt written and verified: {receipt_path}")

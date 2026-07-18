@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """APL Demo Relay — reference prototype (P1, NOT part of the P0 offline demo).
 
 Implements the control plane of docs/hosted_live_demo.md so the hosted demo

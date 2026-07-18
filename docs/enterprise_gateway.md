@@ -1,6 +1,6 @@
 # APL Enterprise Gateway
 
-APL Sidecar (this repo) is the open-source entry point: it teaches the
+APL Sidecar (this repo) is the Fair Source (FSL-1.1-ALv2) entry point: it teaches the
 language of AI task exposure control — local-only, provider payload,
 exposure accounting, signed receipt, tamper-fail verification.
 

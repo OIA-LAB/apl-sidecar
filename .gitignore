@@ -1,6 +1,11 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+# virtualenvs — never committed
+.venv/
+venv/
+# relicensing scratch (license originals + write smoke); never committed
+_licfetch/
 # local demo signing keys — NEVER committed
 keys/
 *.pem
@@ -8,11 +13,16 @@ keys/
 # (fresh clones need it to verify the committed receipts; public key only,
 # CI-checked by tests/test_no_deprecated_terms.py)
 !spec/*.pem
+# frozen v0.1.0 conformance vectors ship the demo PUBLIC key too
+!spec/conformance/**/*.pem
 # local run artifacts
 out/
 .env
 receipt.local.json
 *.egg-info/
+# build backends' output (setuptools / python -m build)
+build/
+dist/
 apl-out/
 apl-live-out/
 receipt.live.json

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """BYOK adapter: any OpenAI-compatible /v1/chat/completions endpoint.
 
 This one seat covers three deployments with the same code path:

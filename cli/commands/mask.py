@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl mask -- show the masking plan and LEAK-CHECK the provider payloads.
 
 P0 masking is user-guided: the plan declares which fields are local-only.

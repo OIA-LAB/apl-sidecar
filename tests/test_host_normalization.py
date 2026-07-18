@@ -1,16 +1,17 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Endpoint host normalization + trust-domain derivation.
 
 A port is not an isolation boundary and neither is the spelling of a host:
 case, a trailing dot, an explicit :port, and every loopback address must all
 collapse deterministically. IPv6 must survive intact — '::1' is a real host,
-never '' or 'unknown'. The verifier duplicates this rule (verifier/apl_verify.py
-_normalize_host / _trust_domain); test_verifier_host_rule_matches_common below
-pins the two implementations together on this same table.
+never '' or 'unknown'. The rule has ONE implementation, in apl_verifier.trust;
+the runtime imports it, so test_verifier_host_rule_is_single_source below pins
+that the runtime uses that very implementation (no second copy to drift).
 """
 import pytest
 
+import apl_verifier
 from cli.commands import _common as c
-from verifier import apl_verify
 
 # (raw endpoint host, expected normalized host, expected trust domain)
 HOST_TABLE = [
@@ -44,9 +45,15 @@ def test_port_is_not_an_isolation_boundary():
     assert c.trust_domain("127.0.0.1:1") == c.trust_domain("127.0.0.1:2")
 
 
+def test_verifier_host_rule_is_single_source():
+    """One implementation, no drift: the runtime's normalize_host/trust_domain
+    ARE the apl_verifier functions (same object), so they cannot diverge."""
+    assert c.normalize_host is apl_verifier.normalize_host
+    assert c.trust_domain is apl_verifier.trust_domain
+
+
 @pytest.mark.parametrize("raw,host,domain", HOST_TABLE)
-def test_verifier_host_rule_matches_common(raw, host, domain):
-    """The verifier duplicates the rule to stay standalone; the two copies
-    must never drift. Pin them together on the shared host table."""
-    assert apl_verify._normalize_host(raw) == c.normalize_host(raw) == host
-    assert apl_verify._trust_domain(raw) == c.trust_domain(raw) == domain
+def test_verifier_host_rule_matches_table(raw, host, domain):
+    """The single implementation must satisfy the shared host table."""
+    assert apl_verifier.normalize_host(raw) == c.normalize_host(raw) == host
+    assert apl_verifier.trust_domain(raw) == c.trust_domain(raw) == domain

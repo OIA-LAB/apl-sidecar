@@ -1,15 +1,16 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "apl-sidecar"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local exposure control and signed receipts for sensitive AI tasks"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
-dependencies = ["cryptography", "PyYAML"]
+license = "FSL-1.1-ALv2"
+license-files = ["LICENSE", "LICENSES/*"]
+dependencies = ["cryptography", "PyYAML", "apl-verifier>=0.2.0,<0.3.0"]
 
 [project.optional-dependencies]
 dev = ["jsonschema", "pytest", "ruff"]

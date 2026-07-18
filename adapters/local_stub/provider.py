@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Local stub — deterministic placeholder for local-model execution.
 
 In enterprise deployments this seat is taken by a customer-controlled local

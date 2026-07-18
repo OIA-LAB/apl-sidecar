@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Mock provider B — offline fixture-backed. Never touches the network."""
 from __future__ import annotations
 

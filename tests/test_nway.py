@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """N-way fragmentation — the ruling's contract under test.
 
 Seats are not providers, providers are not trust domains: the receipt must
@@ -11,11 +12,13 @@ from pathlib import Path
 
 import pytest
 
+from apl_verifier import VerifyError
+from apl_verifier.receipt import _check_trust_domain_consistency
 from cli.commands import _common as c
 from cli.commands import run_live, run_mock
+from cli.commands._verifier_boot import verify_receipt
 from tests._schema_check import check as schema_check
 from tests.test_run_live import KEY, FakeTransport
-from verifier.apl_verify import VerifyError, verify_receipt, _check_trust_domain_consistency
 
 REPO = Path(__file__).resolve().parents[1]
 THREE_WAY = REPO / "examples" / "02_market_entry_three_way"
@@ -271,15 +274,21 @@ def test_verifier_rejects_duplicate_seat_id(monkeypatch, tmp_path):
 # ------------- signing_key_id can never steer the verifier ------------
 
 def test_signing_key_id_traversal_rejected(monkeypatch, tmp_path):
-    from verifier.apl_verify import load_public_key
+    from apl_verifier import load_public_key
+    from cli.commands._verifier_boot import resolve_pubkey_path
     receipt = _fresh_receipt(monkeypatch, tmp_path,
                              ["pricing=openai", "channel=openai", "risk=openai"])
     receipt["signing_key_id"] = "../../../../home/victim/.ssh/id"
+    # The runtime bridge rejects a traversal id before any filesystem lookup.
     with pytest.raises(VerifyError, match="signing_key_id"):
         verify_receipt(receipt)
     for bad in ("../../evil", "/etc/passwd", "a/b", "a\\b", "x" * 65, ""):
+        # The runtime bridge never builds a path from a bad id.
         with pytest.raises(VerifyError):
-            load_public_key(bad)
+            resolve_pubkey_path(bad)
+        # The pure verifier validates the id even when handed an explicit key.
+        with pytest.raises(VerifyError):
+            load_public_key(bad, str(tmp_path / "irrelevant.pem"))
 
 
 # ----------------------- offline paths for 3-way ----------------------

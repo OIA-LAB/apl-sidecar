@@ -2,7 +2,11 @@
 
 > Private Mode for AI
 
-![status: experimental](https://img.shields.io/badge/status-experimental-orange) ![demo: offline](https://img.shields.io/badge/demo-offline-black) ![license: MIT](https://img.shields.io/badge/license-MIT-green)
+![status: experimental](https://img.shields.io/badge/status-experimental-orange) ![demo: offline](https://img.shields.io/badge/demo-offline-black) ![license: FSL--1.1--ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue)
+
+**Licensing (layered):** runtime is Fair Source (FSL-1.1-ALv2); the verifier
+(`packages/apl-verifier/`) is permanently Apache-2.0; the specification
+(`spec/`) is CC BY 4.0. Details in [LICENSING.md](LICENSING.md).
 
 ## Your prompt has a blast radius.
 
@@ -253,7 +257,7 @@ limits, and the trust-domain rule: [docs/fragmentation.md](docs/fragmentation.md
 
 ## Enterprise Gateway
 
-The open-source Sidecar demonstrates the runtime mechanism. Enterprise deployment, organization-wide policy, audit workflows, and provider governance belong to the [APL Enterprise Gateway](docs/enterprise_gateway.md).
+The Fair Source (FSL-1.1-ALv2) Sidecar demonstrates the runtime mechanism. Enterprise deployment, organization-wide policy, audit workflows, and provider governance belong to the [APL Enterprise Gateway](docs/enterprise_gateway.md).
 
 ## Contributing
 
@@ -261,4 +265,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md). Useful contributions include prov
 
 ## License
 
-MIT — see [LICENSE](LICENSE). All bundled scenario content is fictional and synthetic.
+Layered — see [LICENSING.md](LICENSING.md). In short: the runtime is Fair Source
+(FSL-1.1-ALv2, see [LICENSE](LICENSE)); the verifier is permanently Apache-2.0;
+the specification is CC BY 4.0. The v0.1.0 release remains MIT, unchanged. All
+bundled scenario content is fictional and synthetic.

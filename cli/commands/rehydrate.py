@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl rehydrate -- combine mock provider answers with local-only context.
 
 Rehydration happens HERE, on your machine. Providers only ever saw the

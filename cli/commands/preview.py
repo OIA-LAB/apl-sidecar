@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """apl preview -- show local-only fields, disclosures, estimates, and residual risk."""
 from __future__ import annotations
 from . import _common as c

@@ -1,18 +1,16 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Local demo signing for APL Sidecar. Private keys never leave keys/ (gitignored)."""
 from __future__ import annotations
 
 import base64
-import sys
-from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from . import _resources
+from ._verifier_boot import apl_verifier as _verifier
 
-REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO / "verifier"))
-from apl_verify import compute_receipt_hash  # noqa: E402
+compute_receipt_hash = _verifier.compute_receipt_hash
 
 LOCAL_KEY_ID = "apl-local-demo-key"
 KEYS_DIR = _resources.user_key_dir()

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apl-verifier"
+version = "0.2.0"
+description = "Independent, permanently Apache-2.0 receipt verifier for APL Sidecar"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+dependencies = ["cryptography"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+apl-verify = "apl_verifier.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["apl_verifier*"]

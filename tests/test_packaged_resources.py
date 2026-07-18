@@ -1,10 +1,10 @@
+# SPDX-License-Identifier: FSL-1.1-ALv2
 """Wheel-safe bundled resource and documented CLI parser tests."""
 import json
 from pathlib import Path
 
 from cli import apl
-from cli.commands import _common, _resources
-from verifier import apl_verify
+from cli.commands import _common, _resources, _verifier_boot
 
 
 def test_bundled_resources_work_without_source_tree(monkeypatch, tmp_path: Path):
@@ -19,10 +19,14 @@ def test_bundled_resources_work_without_source_tree(monkeypatch, tmp_path: Path)
 
 
 def test_packaged_public_key_fallback(monkeypatch, tmp_path: Path):
-    monkeypatch.setattr(apl_verify, "_KEY_DIRS", (tmp_path / "missing",))
+    # With the user key dir absent, the runtime bridge must still resolve the
+    # packaged spec/ demo PUBLIC key so a fresh checkout verifies committed
+    # receipts. (The verifier package itself never searches; the bridge does.)
+    monkeypatch.setattr(_resources, "user_key_dir",
+                        lambda: tmp_path / "missing")
     receipt = json.loads(Path("examples/00_private_idea/receipt.json").read_text(
         encoding="utf-8"))
-    apl_verify.verify_receipt(receipt)
+    _verifier_boot.verify_receipt(receipt)
 
 
 def test_documented_named_seat_commands_parse(monkeypatch):
@@ -84,10 +88,22 @@ def test_release_workflow_reuses_smoked_distributions():
     assert 'tags: ["v*"]' in workflow
     assert "id-token: write" in workflow
     assert "environment: pypi" in workflow
-    assert "installed-wheel-smoke:" in workflow
-    assert "needs: build" in workflow
-    assert "needs: installed-wheel-smoke" in workflow
+    # Dual-package pipeline: apl-verifier publishes before apl-sidecar.
+    assert "verifier-build:" in workflow
+    assert "verifier-publish:" in workflow
+    assert "sidecar-build:" in workflow
+    assert "sidecar-installed-wheel-smoke:" in workflow
+    assert "sidecar-publish:" in workflow
+    # Hard ordering gate: the sidecar only builds after the verifier is live,
+    # because the sidecar installed-wheel smoke pip-resolves apl-verifier.
+    assert "needs: verifier-publish" in workflow
+    # Sidecar publish reuses the exact smoked distributions (no rebuild between
+    # smoke and publish): smoke needs the build, publish needs the smoke.
+    assert "needs: sidecar-build" in workflow
+    assert "needs: sidecar-installed-wheel-smoke" in workflow
     assert "actions/upload-artifact@v4" in workflow
-    assert workflow.count("actions/download-artifact@v4") == 2
+    # One download-artifact per: verifier-publish, sidecar smoke, sidecar-publish.
+    assert workflow.count("actions/download-artifact@v4") == 3
     assert "python scripts/smoke_installed_wheel.py dist" in workflow
     assert "packages-dir: dist/" in workflow
+    assert "packages-dir: dist-verifier/" in workflow
