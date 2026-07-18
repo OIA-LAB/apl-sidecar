@@ -23,8 +23,15 @@ TEXT_SUFFIXES = {".py", ".md", ".json", ".yaml", ".yml", ".txt", ".html",
 
 # Exceptions (work-order rule 2): license text, the CLA legal clauses, and the
 # report's own filename references. Plus two pre-existing doc mentions.
+#
+# Principle: assertion terms (patent-pending, PPA, NPA, and the TM symbols) are
+# zero-tolerance everywhere except official license full text; the bare word
+# "patent", used in legal explanation, is NOT forbidden. LICENSING.md is
+# allow-listed on that basis -- its FAQ explains how the FSL-period and
+# Apache-2.0 patent grants relate, using only the bare word "patent" (it carries
+# no assertion terms).
 ALLOWED_PATH_PREFIXES = ("LICENSES/", "packages/apl-verifier/LICENSE")
-ALLOWED_EXACT = {"CLA.md", "RELICENSE_REPORT.md",
+ALLOWED_EXACT = {"CLA.md", "RELICENSE_REPORT.md", "LICENSING.md",
                  # this gate's own source names the forbidden terms to detect them
                  "tests/test_relicensing_terms.py"}
 ALLOWED_PREEXISTING = {

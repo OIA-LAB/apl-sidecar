@@ -58,3 +58,7 @@ License, which is granted separately and irrevocably now and takes effect on the
 second anniversary of each version's release date. The FSL-period grant and the
 Apache-2.0 Future License are two independent grants; terminating the first does
 not reach the second.
+
+**Can I contribute code now? Is the CLA final?**
+The CLA is currently under legal review; code contributions are not accepted
+until review completes.
