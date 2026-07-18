@@ -49,6 +49,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist-verifier/
+          skip-existing: true
 
   # ---------- Package 2: apl-sidecar (runtime, publishes AFTER) ----------
   # `needs: verifier-publish` is the hard ordering gate: the sidecar smoke
@@ -82,7 +83,25 @@ jobs:
         with:
           name: sidecar-distributions
           path: dist/
-      - run: python scripts/smoke_installed_wheel.py dist
+      # Retry to absorb PyPI index propagation of the just-published
+      # apl-verifier (the sidecar wheel resolves it at install time).
+      # Propagation delay is not a failure; cap the window at 15 minutes.
+      - name: installed-wheel smoke (retry for PyPI propagation, cap 15m)
+        run: |
+          deadline=$(( $(date +%s) + 900 ))
+          sleep_s=15
+          attempt=1
+          until python scripts/smoke_installed_wheel.py dist; do
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "installed-wheel smoke still failing after 15m — real failure"
+              exit 1
+            fi
+            echo "smoke attempt $attempt failed (likely apl-verifier PyPI propagation); backoff ${sleep_s}s"
+            sleep "$sleep_s"
+            sleep_s=$(( sleep_s * 2 )); [ "$sleep_s" -gt 120 ] && sleep_s=120
+            attempt=$(( attempt + 1 ))
+          done
+          echo "installed-wheel smoke passed"
 
   sidecar-publish:
     needs: sidecar-installed-wheel-smoke
@@ -98,3 +117,4 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
+          skip-existing: true
