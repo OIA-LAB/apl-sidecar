@@ -57,7 +57,7 @@ def test_no_deprecated_vocabulary():
 
 
 def test_canonical_term_present_where_expected():
-    receipt = (REPO / "examples" / "00_private_idea" / "receipt.json").read_text(
+    receipt = (REPO / "examples" / "00_private_matter" / "receipt.json").read_text(
         encoding="utf-8")
     assert "no_single_provider_saw_full" in receipt
 

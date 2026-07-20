@@ -13,7 +13,7 @@ from cli.commands import run_live
 from cli.commands._verifier_boot import verify_receipt
 
 REPO = Path(__file__).resolve().parents[1]
-EXAMPLE = REPO / "examples" / "00_private_idea"
+EXAMPLE = REPO / "examples" / "00_private_matter"
 KEY = "test-key-not-real-1234567890abcdef"  # deliberately NOT sk- prefixed: repo secret-hygiene gate
 
 

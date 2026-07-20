@@ -60,7 +60,7 @@ Open hosted playground
 - no claim that the hosted demo protects real secrets;
 - no raw input storage by default;
 - no default use for real sensitive content;
-- fixed workflows only (`private_idea`, `private_code_context`);
+- fixed workflows only (`private_matter`, `private_code_context`);
 - rate limited; input length limited; daily cost capped;
 - mock fallback when quota is exhausted;
 - provider pool configurable from the backend;
@@ -73,7 +73,7 @@ Open hosted playground
 | Per-IP daily limit | 3–5 live runs                               |
 | Per-session limit  | 3 live runs                                 |
 | Input length       | 2,000–4,000 characters                      |
-| Allowed scenarios  | `private_idea`, `private_code_context` only |
+| Allowed scenarios  | `private_matter`, `private_code_context` only |
 | Arbitrary chat     | Disabled                                    |
 | Fallback           | Mock response                               |
 | CAPTCHA            | P1.1 or later                               |

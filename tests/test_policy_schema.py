@@ -24,7 +24,7 @@ def test_policy_manifest_matches_schema():
 
 
 def test_example_receipts_match_schema():
-    for ex in ("00_private_idea", "01_private_code_context"):
+    for ex in ("00_private_matter", "01_private_code_context"):
         r = _load(REPO / "examples" / ex / "receipt.json")
         errors = check(r, RECEIPT_SCHEMA)
         assert not errors, (ex, errors)
@@ -38,22 +38,22 @@ def test_chain_receipts_match_schema():
 
 
 def test_schema_rejects_bad_receipt():
-    r = _load(REPO / "examples" / "00_private_idea" / "receipt.json")
+    r = _load(REPO / "examples" / "00_private_matter" / "receipt.json")
     r.pop("no_single_provider_saw_full")
     assert check(r, RECEIPT_SCHEMA)  # must produce errors
     # Exposure is cumulative and may legitimately exceed 1.0 (ruling: capping
     # would under-report) — but it can never be negative.
-    r2 = _load(REPO / "examples" / "00_private_idea" / "receipt.json")
+    r2 = _load(REPO / "examples" / "00_private_matter" / "receipt.json")
     r2["max_single_provider_exposure"] = 1.5
     assert check(r2, RECEIPT_SCHEMA) == []  # >1 is valid by design
-    r3 = _load(REPO / "examples" / "00_private_idea" / "receipt.json")
+    r3 = _load(REPO / "examples" / "00_private_matter" / "receipt.json")
     r3["max_single_provider_exposure"] = -0.1
     assert check(r3, RECEIPT_SCHEMA)  # negative must still be rejected
 
 
 def test_policy_caps_respected_by_examples():
     policy = _load(REPO / "spec" / "demo_policy_manifest.json")
-    for ex in ("00_private_idea", "01_private_code_context"):
+    for ex in ("00_private_matter", "01_private_code_context"):
         r = _load(REPO / "examples" / ex / "receipt.json")
         assert r["max_single_provider_exposure"] <= \
             policy["max_single_provider_exposure"], ex

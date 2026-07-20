@@ -1,0 +1,22 @@
+# APL masking plan — guided_curated_p0 (user-declared, not auto-detected)
+task_type: private_matter
+
+# fields whose VALUES must never appear in any provider payload
+local_only_fields:
+  - parties
+  - codename_mapping
+  - consideration
+  - posture
+  - red_flags
+
+# abstract task signals deliberately PRESERVED so answers stay useful
+preserved_task_signals:
+  - task type (tighten a due-diligence request list; draft a cover note)
+  - matter class (private-company acquisition, distribution sector)
+  - parties referred to only by role (Acquirer / Target) and codename
+  - desired outputs (categorized request list; cover note to opposing counsel)
+  - quality criteria (clean structure; neutral professional tone)
+
+payload_routing:
+  mock_provider_a: due-diligence request list, grouped and de-duplicated
+  mock_provider_b: cover note to opposing counsel requesting a data-room index

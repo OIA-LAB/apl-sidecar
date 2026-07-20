@@ -1,7 +1,7 @@
 {
   "policy_id": "apl-oss-demo-policy",
   "policy_version": "0.1.0-draft",
-  "task_types": ["private_idea", "private_code_context"],
+  "task_types": ["private_idea", "private_matter", "private_code_context"],
   "max_single_provider_exposure": 0.35,
   "allowed_providers": ["mock_provider_a", "mock_provider_b", "local_stub"],
   "masking_level": "guided_curated_p0",

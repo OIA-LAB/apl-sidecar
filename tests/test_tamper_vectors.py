@@ -38,7 +38,7 @@ def test_all_four_vectors_exist():
     assert len(list(TV.glob("*.json"))) == 4
 
 
-@pytest.mark.parametrize("ex", ["00_private_idea", "01_private_code_context"])
+@pytest.mark.parametrize("ex", ["00_private_matter", "01_private_code_context"])
 def test_example_tampered_receipt_fails(ex):
     with pytest.raises(VerifyError):
         _verifier_boot.verify_receipt(
@@ -51,13 +51,13 @@ def test_cli_reports_failure_message(capsys):
     assert FAIL_MESSAGE in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("ex", ["00_private_idea", "01_private_code_context"])
+@pytest.mark.parametrize("ex", ["00_private_matter", "01_private_code_context"])
 def test_mask_leak_check_passes(ex):
     assert mask.run(str(REPO / "examples" / ex)) == 0
 
 
 def test_single_byte_flip_fails():
-    r = _load(REPO / "examples" / "00_private_idea" / "receipt.json")
+    r = _load(REPO / "examples" / "00_private_matter" / "receipt.json")
     r["provenance"]["example_id"] = r["provenance"]["example_id"] + "x"
     with pytest.raises(VerifyError):
         _verifier_boot.verify_receipt(r)

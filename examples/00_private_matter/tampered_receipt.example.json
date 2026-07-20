@@ -1,0 +1,84 @@
+{
+  "local_only_hashes": [
+    {
+      "field": "codename_mapping",
+      "sha256": "c78b8e7588ba3aaf0ea16c02f208c462726fc3dd5de88eb337104b9f360f955d"
+    },
+    {
+      "field": "consideration",
+      "sha256": "6c0d124f95ad35825cd6532da6210330b65a49aecc074f9ee6c641178db8a2b7"
+    },
+    {
+      "field": "parties",
+      "sha256": "272b72ba59b772ea5c4a050b949add5275b51954fe2550a0053108c849423416"
+    },
+    {
+      "field": "posture",
+      "sha256": "fb9400aad7b5a58da5d4fe807bbf4b92206d0ee95ad63ff90a93c93f5f2c7c19"
+    },
+    {
+      "field": "red_flags",
+      "sha256": "92f4113dd0c2b08c04e31094eb513a4126675d8ea0555e2ab4a1f37eab3e06bd"
+    }
+  ],
+  "local_only_token_estimate": 127,
+  "masking_level": "guided_curated_p0",
+  "max_single_provider_exposure": 0.338045,
+  "mode": "offline-mock",
+  "no_single_provider_saw_full": true,
+  "original_task_sha256": "f8abd0e0a0d4123d56d351f5bd080a2022074707f1dfd5d46c62dd93186319a9",
+  "original_task_token_estimate": 425,
+  "policy_id": "apl-oss-demo-policy",
+  "prev_receipt_hash": null,
+  "provenance": {
+    "apl_sidecar_version": "0.1.0-draft",
+    "created_at": "2026-07-20T10:05:55Z",
+    "example_id": "00_private_matter",
+    "policy_version": "0.1.0-draft",
+    "receipt_schema_version": "0.1.0-draft"
+  },
+  "provider_events": [
+    {
+      "disclosed_token_estimate": 144,
+      "event_type": "mock_response",
+      "payload_chars": 574,
+      "payload_sha256": "00d3cdf4885b3932c0d14817985f64b2a51a1a1577c99921da2fa44578d5cf2c",
+      "provider_id": "mock_provider_a",
+      "response_sha256": "e313fb9b4e6700524fe13d681edef1f47e35b0ba63e7d777f332fff98f1e971d"
+    },
+    {
+      "disclosed_token_estimate": 143,
+      "event_type": "mock_response",
+      "payload_chars": 571,
+      "payload_sha256": "c859b7551b3c1d081521dbc0b1cde6d39cdc2d2c77a8f52e49cda4416e5ba914",
+      "provider_id": "mock_provider_b",
+      "response_sha256": "795d32fe0f3429ff1ba9ea73bd3e0088dfc111829e620428560ec225b703e19b"
+    }
+  ],
+  "receipt_hash": "4e6d9ff4f4dd4ef9c90dfd229d3e929816799a4ccf4213a9386966ceabbd931f",
+  "run_artifacts": {
+    "assessment_sha256": "df02c15c208cf56d800822ab5074ca35b81b406c68468eb1297b1e2614f24153",
+    "final_output_sha256": "c50652b889259feaed1492117486a0d1ee46bd3dd45460e8df371ddd8ef485ae"
+  },
+  "run_id": "01KXZFTGYNDT7CFHTT2DT6ZZ31",
+  "signature": {
+    "alg": "Ed25519",
+    "value": "DU5IXtxZkUDHPTxiJvDnQgZcfiZYA4VB+Lx1hhfmOni2h8LLNS415tACU6ny3yXKjGJwuDY+LsepKqBeD99vCw=="
+  },
+  "signing_key_id": "apl-oss-demo-key-02",
+  "single_provider_exposure": [
+    {
+      "exposure_ratio": 0.338045,
+      "provider_id": "mock_provider_a"
+    },
+    {
+      "exposure_ratio": 0.336278,
+      "provider_id": "mock_provider_b"
+    }
+  ],
+  "task_type": "private_matter",
+  "verification": {
+    "algorithm": "Ed25519",
+    "status": "verified"
+  }
+}

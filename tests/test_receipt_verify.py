@@ -15,7 +15,7 @@ from cli.commands import _verifier_boot
 
 REPO = Path(__file__).resolve().parents[1]
 
-EXAMPLES = [REPO / "examples" / "00_private_idea",
+EXAMPLES = [REPO / "examples" / "00_private_matter",
             REPO / "examples" / "01_private_code_context"]
 CHAIN = [REPO / "spec" / "conformance_vectors" / "valid_chain" / "receipt_001.json",
          REPO / "spec" / "conformance_vectors" / "valid_chain" / "receipt_002.json"]

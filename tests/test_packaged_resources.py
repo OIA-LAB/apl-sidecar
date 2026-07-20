@@ -9,7 +9,7 @@ from cli.commands import _common, _resources, _verifier_boot
 
 def test_bundled_resources_work_without_source_tree(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(_resources, "SOURCE_ROOT", tmp_path / "missing-source")
-    scenario = _resources.bundled_scenario_path("00_private_idea")
+    scenario = _resources.bundled_scenario_path("00_private_matter")
     assert (scenario / "input.original.example.txt").is_file()
     assert (scenario / "masking_plan.yaml").is_file()
     playground = _resources.playground_root()
@@ -24,7 +24,7 @@ def test_packaged_public_key_fallback(monkeypatch, tmp_path: Path):
     # receipts. (The verifier package itself never searches; the bridge does.)
     monkeypatch.setattr(_resources, "user_key_dir",
                         lambda: tmp_path / "missing")
-    receipt = json.loads(Path("examples/00_private_idea/receipt.json").read_text(
+    receipt = json.loads(Path("examples/00_private_matter/receipt.json").read_text(
         encoding="utf-8"))
     _verifier_boot.verify_receipt(receipt)
 
@@ -38,7 +38,7 @@ def test_documented_named_seat_commands_parse(monkeypatch):
 
     monkeypatch.setattr(apl.cmd_run_live, "run", fake_run)
     assert apl.main([
-        "run-live", "examples/00_private_idea",
+        "run-live", "examples/00_private_matter",
         "--seat", "mock_provider_a=anthropic",
         "--seat", "mock_provider_b=openai", "--yes",
     ]) == 0
@@ -59,7 +59,7 @@ def test_documented_named_seat_commands_parse(monkeypatch):
     assert calls[-1][1]["seat_specs"] == [
         "pricing=openai", "channel=openai", "risk=openai"]
     assert apl.main([
-        "run-live", "examples/00_private_idea",
+        "run-live", "examples/00_private_matter",
         "--seat", "mock_provider_a=openai",
         "--seat", "mock_provider_b=openai", "--yes",
     ]) == 0

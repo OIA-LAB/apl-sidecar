@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.1
+
+Demo: replace the 00 fixture scenario with a legal privileged-matter example
+(M&A due diligence); regenerate demo receipts and mock outputs. Rename
+examples/00_private_idea -> examples/00_private_matter.
+
+apl-verifier unchanged; 0.2.0 remains current.
+
 ## 0.2.0
 
 Layered relicensing. The runtime moves to Fair Source (FSL-1.1-ALv2); the

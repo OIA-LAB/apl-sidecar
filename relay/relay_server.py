@@ -24,7 +24,7 @@ from pathlib import Path
 _REPO = Path(__file__).resolve().parents[1]
 
 DEFAULT_CONFIG = {
-    "allowed_scenarios": ["private_idea", "private_code_context"],
+    "allowed_scenarios": ["private_matter", "private_code_context"],
     "per_ip_daily_limit": 5,
     "per_session_limit": 3,
     "max_input_chars": 4000,
@@ -89,7 +89,7 @@ class RelayState:
 
 
 def _mock_answer(scenario: str, provider_slot: str) -> str:
-    ex = {"private_idea": "00_private_idea",
+    ex = {"private_matter": "00_private_matter",
           "private_code_context": "01_private_code_context"}[scenario]
     fname = "mock_answer_a.txt" if provider_slot == "a" else "mock_answer_b.txt"
     return (_REPO / "examples" / ex / fname).read_text(encoding="utf-8")
