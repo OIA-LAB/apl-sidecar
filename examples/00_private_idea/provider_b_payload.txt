@@ -1,9 +1,0 @@
-Task: suggest a clear GitHub README structure for a privacy-sensitive
-developer tool (name and internals intentionally withheld).
-
-Requirements:
-- a first screen that states the problem in one line without marketing hype;
-- a section order that gets a skeptical developer to a working demo fast;
-- where to put the "what this tool does NOT claim" section;
-- a call-to-action structure that does not require signup;
-- documentation flow for a tool whose users care about verifiability.

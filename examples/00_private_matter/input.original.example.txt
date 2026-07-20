@@ -1,0 +1,38 @@
+# Project Lantern — matter file (working copy)
+
+## Drafting ask
+
+Matter reference: Project Lantern. Refer to the parties only as Acquirer and
+Target.
+
+Tighten the due-diligence request list below for a private-company acquisition
+(distribution sector): group requests by category, remove duplicates, and draft
+a short cover note to opposing counsel requesting a data-room index within ten
+business days.
+
+## Due-diligence request list (rough)
+
+- certificate of incorporation, bylaws, minute books
+- org chart; list of subsidiaries and branch locations
+- all material customer and supplier contracts
+- supplier continuity: contract terms, renewal and termination exposure
+- employment agreements for key managers; benefit plans
+- shareholder approvals, required consents, transaction-timetable readiness
+- pending or threatened litigation; regulatory correspondence
+- tax returns, last three years
+- real property leases; fleet and cold-storage equipment schedules
+- environmental permits; food-safety certifications
+- insurance policies and claims history
+
+## Privileged appendix (LOCAL ONLY — attorney work product)
+
+- Acquirer: Tarnwell Group (listed). Target: Marrowfield Provisions
+  (private, family-owned).
+- Codename mapping: "Project Lantern" = Tarnwell / Marrowfield.
+- Consideration: [redacted for public demo] cash at closing; holdback
+  structure under discussion.
+- Posture: the board has approved pursuing exclusivity; hold the initial
+  indemnity-cap position through the first counter.
+- Red flags: the Target's second-largest supplier contract expires during
+  the expected diligence window, renewal posture unknown; two family
+  shareholders are not yet aligned on the timetable.

@@ -1,0 +1,47 @@
+[PRE-AUTHORED FIXTURE — represents the local rehydration step: the two mock
+answers combined with the local-only context. No provider saw this document.]
+
+Project Lantern — work product assembled locally:
+
+1. Categorized due-diligence request list (parts 1 and 2, re-joined here)
+   - Corporate & organizational: charter/bylaws/minute books; org chart,
+     subsidiaries, branches; approvals, consents, timetable readiness.
+   - Commercial contracts: material customer and supplier contracts; supplier
+     continuity (terms, renewal and termination exposure).
+   - Employment & benefits: key-manager employment agreements; benefit plans.
+   - Litigation & regulatory: pending or threatened litigation; regulatory
+     correspondence.
+   - Financial & tax: tax returns, last three years.
+   - Real property & assets: real property leases; fleet and cold-storage
+     equipment schedules.
+   - Compliance & insurance: environmental permits and food-safety
+     certifications; insurance policies and claims history.
+
+2. Cover note to opposing counsel (from provider B)
+   - Transmits the full categorized list on behalf of the Acquirer.
+   - Requests a populated data room and a data-room index within ten business
+     days; permits "not applicable" notes in the index.
+   - States expressly that nothing in the letter comments on transaction terms.
+
+Distribution note: provider A saw only the first half of the request set and
+provider B saw only the second half plus the cover-note task. Neither saw the
+whole request list, and neither saw the privileged appendix.
+
+Local-only context (reintroduced on this machine only)
+- parties — real identities of Acquirer and Target, used to address the note
+  and route the file internally; never placed in either payload.
+- codename_mapping — the mapping from "Project Lantern" to the real names,
+  kept out of everything that leaves the machine.
+- consideration — price and holdback terms; deliberately kept out of the cover
+  note, which discusses no terms.
+- posture — board approval, exclusivity, and the indemnity-cap position, used
+  locally to sequence the request list and time the note.
+- red_flags — the second-largest-supplier renewal exposure and the unaligned
+  family shareholders; used locally to weight the supplier-continuity and
+  shareholder-approval requests.
+
+What each provider actually saw: half of a codename-level request-list task
+(A and B respectively), plus a codename-level cover-note task (B). Neither
+provider saw the whole list or the privileged appendix — the party identities,
+the codename mapping, the price and holdback terms, the negotiation posture, or
+the deal red flags.

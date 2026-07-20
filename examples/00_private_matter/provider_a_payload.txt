@@ -1,0 +1,10 @@
+Matter: Project Lantern (Acquirer / Target only).
+
+Group and de-duplicate this first set of due-diligence requests for a private-company acquisition (distribution sector); return a clean, categorized list of these items only:
+
+- certificate of incorporation, bylaws, minute books
+- org chart; subsidiaries and branch locations
+- material customer and supplier contracts
+- supplier continuity: contract terms, renewal and termination exposure
+- employment agreements for key managers; benefit plans
+- shareholder approvals, required consents, transaction-timetable readiness

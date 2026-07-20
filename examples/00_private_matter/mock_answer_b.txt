@@ -1,0 +1,34 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+Project Lantern — due-diligence requests (part 2 of 2), grouped and de-duplicated:
+
+Litigation & regulatory
+- pending or threatened litigation;
+- regulatory correspondence.
+
+Financial & tax
+- tax returns for the last three years.
+
+Real property & assets
+- real property leases;
+- fleet and cold-storage equipment schedules.
+
+Compliance & insurance
+- environmental permits and food-safety certifications;
+- insurance policies and claims history.
+
+Cover note to opposing counsel:
+
+Dear Counsel,
+
+We write on behalf of the Acquirer in connection with the proposed acquisition
+of the Target. Enclosed is our preliminary due-diligence request list, organized
+by category for ease of reference. To keep the review on schedule, we ask that
+the Target populate a data room and provide a data-room index within ten
+business days of this letter; where a requested item does not exist or is not
+applicable, a short note to that effect in the index will suffice. Nothing in
+this letter or the enclosed list should be read as a comment on the terms of the
+proposed transaction, which remain under discussion between the principals.
+
+Kind regards,
+Counsel for the Acquirer

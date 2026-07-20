@@ -1,0 +1,33 @@
+================================================================
+APL INSPECT -- examples\00_private_matter\receipt.json
+================================================================
+run_id:        01KXZFTGYNDT7CFHTT2DT6ZZ31
+task_type:     private_matter
+policy_id:     apl-oss-demo-policy
+masking_level: guided_curated_p0
+
+-- PROVIDER EXPOSURE -----------------------------------------
+  mock_provider_a: 33.8%
+  mock_provider_b: 33.6%
+  max_single_provider_exposure: 33.8%
+  max allowed by policy:        35.0%
+  no_single_provider_saw_full:  True
+
+-- LOCAL-ONLY ------------------------------------------------
+  5 fields stayed local (only fingerprints entered the receipt):
+    codename_mapping: sha256:c78b8e7588ba3aaf...
+    consideration: sha256:6c0d124f95ad3582...
+    parties: sha256:272b72ba59b772ea...
+    posture: sha256:fb9400aad7b5a58d...
+    red_flags: sha256:92f4113dd0c2b08c...
+
+-- PROVENANCE ------------------------------------------------
+  apl_sidecar_version: 0.1.0-draft
+  created_at: 2026-07-20T10:05:55Z
+  example_id: 00_private_matter
+  policy_version: 0.1.0-draft
+  receipt_schema_version: 0.1.0-draft
+
+  prev_receipt_hash: None
+  receipt_hash:      4e6d9ff4f4dd4ef9c90dfd229d3e929816799a4ccf4213a9386966ceabbd931f
+  signing_key_id:    apl-oss-demo-key-02

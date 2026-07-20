@@ -17,12 +17,14 @@ measurement, not a privacy score.
 
 Idealized reference (equal, non-overlapping fragments, each seat on an
 **independent trust domain**): per-seat volume sits near `1/N`. Measured
-values are always scenario-specific and usually higher, because curated
-payloads restate enough context to stay answerable.
+values are always scenario-specific and can run either side of it — higher
+when curated payloads restate shared context to stay answerable, lower when a
+large local-only remainder never leaves the machine, so less of the original
+is split across the seats at all.
 
 | N | idealized 1/N | measured max seat share |
 |---|---------------|-------------------------|
-| 2 | 0.500 | 0.312 — `examples/00_private_idea`, fragment plan v1 |
+| 2 | 0.500 | 0.338 — `examples/00_private_matter`, fragment plan v1 |
 | 3 | 0.333 | 0.319 — `examples/02_market_entry_three_way`, fragment plan v1 |
 
 Both measured values come from the bundled fictional scenarios, computed
@@ -30,7 +32,7 @@ over CRLF-normalized character counts of the shipped payload files versus
 the original input, with no shared-fragment overlap. Reproduce them:
 
 ```bash
-apl preview examples/00_private_idea
+apl preview examples/00_private_matter
 apl preview examples/02_market_entry_three_way
 ```
 

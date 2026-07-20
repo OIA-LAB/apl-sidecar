@@ -8,7 +8,7 @@ pass `--yes` as explicit network consent.
 Always preview the scenario first:
 
 ```powershell
-apl preview examples/00_private_idea
+apl preview examples/00_private_matter
 ```
 
 ## Environment-only credentials
@@ -34,8 +34,8 @@ The bundled two-way scenario uses fragment IDs `mock_provider_a` and
 `mock_provider_b`:
 
 ```powershell
-apl preview examples/00_private_idea
-apl run-live examples/00_private_idea `
+apl preview examples/00_private_matter
+apl run-live examples/00_private_matter `
   --seat mock_provider_a=anthropic `
   --seat mock_provider_b=openai `
   --yes
@@ -93,7 +93,7 @@ fabricate a successful provider response.
 ## Chaining runs
 
 ```powershell
-apl run-live examples/00_private_idea `
+apl run-live examples/00_private_matter `
   --seat mock_provider_a=anthropic `
   --seat mock_provider_b=openai `
   --output apl-live-out-1 `
@@ -128,8 +128,8 @@ $env:APL_OPENAI_BASE_URL_MOCK_PROVIDER_B="http://127.0.0.1:8793/v1"
 $env:APL_OPENAI_MODEL_MOCK_PROVIDER_A="apl-mock-a"
 $env:APL_OPENAI_MODEL_MOCK_PROVIDER_B="apl-mock-b"
 
-apl preview examples/00_private_idea
-apl run-live examples/00_private_idea `
+apl preview examples/00_private_matter
+apl run-live examples/00_private_matter `
   --seat mock_provider_a=openai `
   --seat mock_provider_b=openai `
   --yes

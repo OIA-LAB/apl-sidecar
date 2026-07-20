@@ -13,7 +13,7 @@ auto key-resolution behaviour for existing callers.
 pip install apl-verifier
 
 # --pubkey is required: the caller chooses which key to trust
-apl-verify examples/00_private_idea/receipt.json --pubkey spec/apl-oss-demo-key.pem
+apl-verify examples/00_private_matter/receipt.json --pubkey spec/apl-oss-demo-key.pem
 
 # a chain, in order
 apl-verify \

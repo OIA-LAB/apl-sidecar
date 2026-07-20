@@ -22,7 +22,7 @@ from tests.test_run_live import KEY, FakeTransport
 
 REPO = Path(__file__).resolve().parents[1]
 THREE_WAY = REPO / "examples" / "02_market_entry_three_way"
-LEGACY = REPO / "examples" / "00_private_idea"
+LEGACY = REPO / "examples" / "00_private_matter"
 
 
 def _env(monkeypatch):

@@ -11,8 +11,8 @@ from . import _common as c
 from . import _resources
 from . import _signing, run_mock, verify
 
-DEFAULT_SCENARIO = _resources.bundled_scenario_path("00_private_idea")
-REFERENCE_SCENARIO_ID = "00_private_idea"
+DEFAULT_SCENARIO = _resources.bundled_scenario_path("00_private_matter")
+REFERENCE_SCENARIO_ID = "00_private_matter"
 
 NEUTRAL_ASSESSMENT = """# Exploratory Reconstruction Assessment
 
@@ -36,16 +36,16 @@ def build_assessment(paths: dict, view: dict) -> str:
 This is a fixed scenario assessment for demonstration only. It is not a secrecy proof or a calibrated attack benchmark.
 
 ## Recovered entities
-- developers and GitHub users
-- an early-stage privacy-sensitive developer tool
+- an acquiring company (Acquirer) and a target company (Target); opposing counsel
+- outside deal counsel preparing due-diligence materials
 
 ## Recovered relationships
-- the tool targets developers who discover software through GitHub
-- the product needs trust signals and a low-friction launch path
+- a private-company acquisition in the distribution sector
+- Acquirer and Target are referred to only by role and by the matter codename
 
 ## Recovered objectives
-- develop positioning and adoption guidance
-- propose a developer-oriented README structure
+- tighten a due-diligence request list
+- draft a cover note to opposing counsel
 
 ## Missing context
 {missing}

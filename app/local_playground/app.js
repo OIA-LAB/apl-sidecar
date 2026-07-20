@@ -37,7 +37,7 @@ const I18N = {
           "<b>那家供應商就看到了 100%</b>。APL 以最小暴露開場——" +
           "<b>沒有任何一家看得到全貌</b>——並簽發一張可驗證的收據。",
     tryWith: "選個場景試：",
-    ex00: "未發表的創業點子",
+    ex00: "機密併購案",
     ex01: "私有 repo 與 bug",
     skip: "直接跳到證明 ↓",
     withoutTitle: "不用 APL",
@@ -99,12 +99,13 @@ const T = I18N[LANG];
 
 const STORY = {
   en: {
-    "00_private_idea": {
-      bad: "The provider now holds your product name, mechanism, pricing, " +
-           "go-to-market channel, and your do-not-disclose note. In one paste.",
-      sumOriginal: "A founder's full working notes for an unannounced startup idea.",
-      sumA: "A generic positioning question — no name, no differentiator, no pricing.",
-      sumB: "A README-structure task — no idea, no business model.",
+    "00_private_matter": {
+      bad: "The provider now holds the parties' real identities, the deal " +
+           "codename, the price terms, the board's posture, and the deal " +
+           "red flags. In one paste.",
+      sumOriginal: "Deal counsel's full working matter file for a confidential M&A matter.",
+      sumA: "A codename-level request-list task — no real names, no terms, no posture.",
+      sumB: "A codename-level cover-note task — no parties, no price, no red flags.",
     },
     "01_private_code_context": {
       bad: "The provider now holds your repo tree, a committed API key, a " +
@@ -116,12 +117,12 @@ const STORY = {
     },
   },
   zh: {
-    "00_private_idea": {
-      bad: "那家供應商現在握有你的產品名、獨門機制、定價、GTM 通路、還有你的" +
-           "「申請前不得揭露」註記。一次貼上，全部奉上。",
-      sumOriginal: "一位創辦人尚未發表的創業點子完整工作筆記。",
-      sumA: "一個泛用的定位問題——沒有名字、沒有差異化、沒有定價。",
-      sumB: "一個 README 結構任務——沒有點子、沒有商業模式。",
+    "00_private_matter": {
+      bad: "那家供應商現在握有雙方真實身分、交易代號、價格條件、董事會的談判" +
+           "姿態、還有交易的紅旗風險。一次貼上，全部奉上。",
+      sumOriginal: "承辦律師一份機密併購案的完整工作卷宗。",
+      sumA: "一個代號層級的清單整理任務——沒有真實名稱、沒有條件、沒有姿態。",
+      sumB: "一個代號層級的函件草擬任務——沒有當事人、沒有價格、沒有紅旗。",
     },
     "01_private_code_context": {
       bad: "那家供應商現在握有你的 repo 樹、一把誤 commit 的 API key、客戶名稱、" +
@@ -348,5 +349,5 @@ $("#verify-bad").addEventListener("click", () => showVerdict(TAMPERED, true));
 
 /* first paint: apply language, never show an empty stage */
 applyLang();
-loadExample("00_private_idea").catch(err =>
+loadExample("00_private_matter").catch(err =>
   showErrorBanner(String(err).slice(0, 120)));

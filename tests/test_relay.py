@@ -16,7 +16,7 @@ def _state(**over):
                             "est_cost_per_live_run_usd": 0.01}, **over))
 
 
-def _body(scenario="private_idea", text="fictional demo input", session="s1"):
+def _body(scenario="private_matter", text="fictional demo input", session="s1"):
     return {"scenario": scenario, "payload_text": text, "session_id": session}
 
 

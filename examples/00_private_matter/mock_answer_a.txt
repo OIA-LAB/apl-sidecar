@@ -1,0 +1,20 @@
+[MOCK RESPONSE — fixture text, no model was called.]
+
+Project Lantern — due-diligence requests (part 1 of 2), grouped and de-duplicated:
+
+Corporate & organizational
+- certificate of incorporation, bylaws, and minute books;
+- org chart, subsidiaries, and branch locations;
+- shareholder approvals, required consents, and transaction-timetable
+  readiness.
+
+Commercial contracts
+- all material customer and supplier contracts;
+- supplier continuity: contract terms, renewal and termination exposure.
+
+Employment & benefits
+- employment agreements for key managers; benefit plans.
+
+Note: the material-contracts item and the supplier-continuity item are kept
+separate — one requests the agreements themselves, the other the renewal and
+termination exposure. No other duplicates were found in this set.
