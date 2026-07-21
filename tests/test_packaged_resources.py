@@ -1,10 +1,17 @@
 # SPDX-License-Identifier: FSL-1.1-ALv2
 """Wheel-safe bundled resource and documented CLI parser tests."""
-import json
+import os
+import subprocess
+import sys
+import venv
 from pathlib import Path
 
+import pytest
+
 from cli import apl
-from cli.commands import _common, _resources, _verifier_boot
+from cli.commands import _common, _resources
+
+REPO = Path(__file__).resolve().parents[1]
 
 
 def test_bundled_resources_work_without_source_tree(monkeypatch, tmp_path: Path):
@@ -18,15 +25,86 @@ def test_bundled_resources_work_without_source_tree(monkeypatch, tmp_path: Path)
     assert policy["policy_id"] == "apl-oss-demo-policy"
 
 
-def test_packaged_public_key_fallback(monkeypatch, tmp_path: Path):
-    # With the user key dir absent, the runtime bridge must still resolve the
-    # packaged spec/ demo PUBLIC key so a fresh checkout verifies committed
-    # receipts. (The verifier package itself never searches; the bridge does.)
-    monkeypatch.setattr(_resources, "user_key_dir",
-                        lambda: tmp_path / "missing")
-    receipt = json.loads(Path("examples/00_private_matter/receipt.json").read_text(
-        encoding="utf-8"))
-    _verifier_boot.verify_receipt(receipt)
+def test_packaged_public_key_fallback(tmp_path: Path):
+    """MEASUREMENT-FLOOR gate (RC-2): the WHEEL — not the source tree — must
+    carry every demo pubkey needed to verify the committed example receipts.
+
+    The old version of this test read the SOURCE receipt+key from the repo cwd
+    (`_source_checkout()` True), so it passed even when the wheel omitted the
+    -02 key — the false-green that shipped the 0.2.1 bug. This version builds a
+    wheel, installs it into a fresh venv, and runs `apl verify` (NO --pubkey)
+    on every shipped example receipt from a NEUTRAL temp cwd with an empty
+    APL_KEY_DIR — so the ONLY key source is the wheel. It also asserts
+    `resources.files('spec')` lives under site-packages (no cwd shadow).
+
+    Delegates to scripts/smoke_installed_wheel.py::measurement_floor so the CI
+    smoke and this unit gate encode the exact same check from one source.
+    """
+    build = pytest.importorskip("build")  # noqa: F841
+    # Build from an ISOLATED snapshot of the tracked tree, not REPO in place:
+    # a stale in-tree build/lib/spec (left by a prior wheel build) is reused by
+    # setuptools and would ship files the current package-data glob excludes —
+    # a build-hygiene false-green. `git archive` yields exactly the committed
+    # (staged) tree with no build artifacts. Falls back to REPO if git is
+    # unavailable (with a fresh outdir; the caller's tmp_path is clean anyway).
+    src = tmp_path / "src"
+    listed = subprocess.run(
+        ["git", "-C", str(REPO), "ls-files"],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if listed.returncode == 0:
+        import shutil
+        for rel in listed.stdout.splitlines():
+            rel = rel.strip()
+            if not rel:
+                continue
+            source = REPO / rel
+            if not source.is_file():
+                continue  # e.g. a deleted-but-tracked path
+            target = src / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
+        build_root = src  # tracked working-tree snapshot, no build/ artifacts
+    else:
+        build_root = REPO  # best-effort; tmp outdir keeps wheels isolated
+    dist = tmp_path / "dist"
+    proc = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", str(build_root),
+         "--outdir", str(dist)],
+        text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if proc.returncode != 0:
+        pytest.skip(f"wheel build unavailable in this env:\n{proc.stdout}")
+    wheels = sorted(dist.glob("*.whl"))
+    assert len(wheels) == 1, f"expected one wheel, got {wheels}"
+
+    vdir = tmp_path / "venv"
+    venv.EnvBuilder(with_pip=True).create(vdir)
+    if os.name == "nt":
+        py = vdir / "Scripts" / "python.exe"
+        apl_exe = vdir / "Scripts" / "apl.exe"
+    else:
+        py = vdir / "bin" / "python"
+        apl_exe = vdir / "bin" / "apl"
+    work = tmp_path / "neutral-work"   # NEVER the source tree
+    work.mkdir()
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    env["APL_KEY_DIR"] = str(tmp_path / "empty-keys")
+
+    install = subprocess.run(
+        [str(py), "-m", "pip", "install", "-q", str(wheels[0])],
+        cwd=work, env=env, text=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if install.returncode != 0:
+        # No network to resolve apl-verifier, etc. — infra, not a real failure.
+        pytest.skip(f"wheel install unavailable (offline?):\n{install.stdout}")
+
+    # Reuse the exact CI measurement-floor check.
+    sys.path.insert(0, str(REPO / "scripts"))
+    try:
+        import smoke_installed_wheel as smoke
+    finally:
+        sys.path.pop(0)
+    smoke.measurement_floor(py, apl_exe, work, env)
 
 
 def test_documented_named_seat_commands_parse(monkeypatch):

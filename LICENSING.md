@@ -39,7 +39,10 @@ depend on v0.1.0 under MIT, you keep those terms.
 **Can I use the spec to build my own implementation?**
 Yes. The specification is CC BY 4.0 — reuse it with attribution. The
 conformance vectors under `spec/conformance_vectors/` are the shared reference
-your implementation can test against.
+your implementation can test against. These vectors live in the **source
+repository**, not inside the `pip install apl-sidecar` wheel: the wheel bundles
+the runtime, the JSON schemas, and the demo public keys, but not the
+conformance-vector corpus. Clone the repo to run the vectors.
 
 **What patent license do I get during the FSL period?**
 For the first two years after a runtime version is made available, the patent

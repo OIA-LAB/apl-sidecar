@@ -76,7 +76,13 @@ apl inspect apl-out
 apl verify apl-out/receipt.json
 ```
 
-`pipx install apl-sidecar` is the intended published-package experience. Until a release is explicitly published, install from this repository as shown above.
+`pip install apl-sidecar` (or `pipx install apl-sidecar` for an isolated CLI)
+is the primary, published-package path — it pulls the wheel from PyPI, and
+`apl demo` runs the bundled fictional scenario with no source checkout needed.
+Use `python -m pip install -e .` only when working from a source clone. The
+`examples/`- and `spec/`-relative "Verify it yourself" commands in each
+scenario's README assume a source checkout; a pip-install user should start
+from `apl demo` and verify the receipt it writes to `apl-out/`.
 
 ## What each provider saw
 

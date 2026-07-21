@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "apl-sidecar"
-version = "0.2.1"
+version = "0.2.2"
 description = "Local exposure control and signed receipts for sensitive AI tasks"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,7 +24,7 @@ include = ["adapters*", "app*", "cli*", "examples*", "relay*", "spec*", "verifie
 [tool.setuptools.package-data]
 examples = ["*/*"]
 app = ["local_playground/*"]
-spec = ["demo_policy_manifest.json", "apl-oss-demo-key.pem"]
+spec = ["*.pem", "*.json", "*.md", "LICENSE"]
 
 [tool.setuptools.exclude-package-data]
 examples = ["*/receipt.local.json", "*/receipt.live.json"]

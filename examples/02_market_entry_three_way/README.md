@@ -39,8 +39,17 @@ the preflight and the receipt will show `channel` + `risk` aggregated into
 one trust domain — fragment count alone does not reduce what that provider
 receives.
 
+## No static receipt shipped
+
+Unlike `00_private_matter` and `01_private_code_context`, this scenario ships
+**no committed `receipt.json`** (and no `tampered_receipt.example.json` or
+`inspect.expected`). It is a run-mock / run-live scenario: **you** generate the
+receipt by running `apl run-mock` (offline) or `apl run-live` (BYOK) above,
+which writes it to `apl-out/` (or your `--output` dir). There is nothing to
+`apl verify` here until you have run it. The signing, verification, receipt
+chaining, and exposure accounting exercised by that run are real.
+
 ---
 
 This example uses user-guided masking and curated provider payloads.
-Verification, signing, receipt chaining, and exposure accounting are real.
 Automatic semantic decomposition is a roadmap item, not a claim.
