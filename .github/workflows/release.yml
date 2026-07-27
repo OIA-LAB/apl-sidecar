@@ -3,10 +3,10 @@ name: Release to PyPI
 # Trusted publishing: no API token is ever created or stored anywhere.
 # TWO packages are published from this repo, in a hard order:
 #   1. apl-verifier  (packages/apl-verifier, Apache-2.0, no sidecar dep)
-#   2. apl-sidecar   (repo root, depends on apl-verifier>=0.2.0,<0.3.0)
+#   2. apl-sidecar   (repo root, depends on apl-verifier>=0.3.0,<0.4.0)
 # apl-verifier MUST reach PyPI first because the sidecar installed-wheel
 # smoke test resolves apl-verifier from PyPI at install time.
-# Configure TWO PyPI trusted publishers before the first v0.2.0 tag
+# Configure TWO PyPI trusted publishers before the first release tag
 # (see private-data/RELEASE_YML_DRAFT_20260717.md section 2):
 #   - apl-verifier : repo apl-sidecar / workflow release.yml / env pypi
 #   - apl-sidecar  : repo apl-sidecar / workflow release.yml / env pypi

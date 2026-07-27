@@ -16,6 +16,10 @@ def run(receipt_path: str) -> int:
     # duplicate-key parser is deliberately not applied here. The produced copy
     # is re-verified below via verify.run(), which DOES route through the strict
     # parser, so any tampered output is still caught on the ingestion side.
+    # Do NOT copy the plain json.loads below as a "how to read a receipt"
+    # template: at any real trust boundary use apl_verifier.load_receipt_json
+    # (the strict duplicate-key parser). The plain parse here is intentional
+    # only because this is a demo/tamper producer, not a trust-boundary read.
     try:
         receipt = json.loads(source.read_text(encoding="utf-8"))
         old_value = receipt["provider_events"][0]["payload_sha256"]

@@ -8,7 +8,7 @@ the old key-resolution behaviour (resolve a signing_key_id against the user
 key dir and the packaged spec/ demo key when no --pubkey is given) so existing
 callers keep working unchanged.
 
-Scheduled for removal in v0.3. New code must import from `apl_verifier`
+Scheduled for removal in v0.4. New code must import from `apl_verifier`
 directly (pure verifier; pass an explicit --pubkey) or, for runtime callers
 that want the old auto key resolution, from cli.commands._verifier_boot.
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 
 warnings.warn(
     "verifier.apl_verify is deprecated; import from the apl_verifier package "
-    "(Apache-2.0) or cli.commands._verifier_boot. Removal in v0.3.",
+    "(Apache-2.0) or cli.commands._verifier_boot. Removal in v0.4.",
     DeprecationWarning,
     stacklevel=2,
 )

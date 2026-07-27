@@ -11,6 +11,14 @@ Deploy fix: the bundled `apl-verifier` exports `load_receipt_json` (used by the
 duplicate-member/strict-parse path), so a clean `pip install apl-sidecar` no
 longer resolves an older PyPI `apl-verifier` that lacks the function.
 
+Release-hygiene comments: the `verifier.apl_verify` deprecation shim now says
+removal in v0.4 (not v0.3, this tree's own version); the `release.yml` header
+comments track the actual `apl-verifier>=0.3.0,<0.4.0` pin and drop the stale
+`v0.2.0` tag reference; and `break_receipt.py` notes that its intentional plain
+`json.loads` (a demo/tamper producer, not a trust boundary) is not a template
+for reading receipts -- use `apl_verifier.load_receipt_json` there. No behavior
+or release-logic changes.
+
 ## 0.2.2
 
 Packaging fix: the wheel/sdist now ship `spec/apl-oss-demo-key-02.pem` (and the
