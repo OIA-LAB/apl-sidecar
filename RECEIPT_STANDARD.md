@@ -77,20 +77,54 @@ Field notes:
 
 ## 2. Canonicalization
 
-`receipt_hash` = sha256, lower-hex, over the **canonical JSON** of the receipt
-object with the `receipt_hash` and `signature` members removed.
+`receipt_hash` = sha256, lower-hex, over the canonical serialization of the
+receipt object with the `receipt_hash` and `signature` members removed.
 
-Canonical JSON is defined as:
+This canonical serialization is a **specific, named algorithm — `apl-json-v1`
+— NOT RFC 8785 / JCS.** A second implementer who reads the phrase "canonical
+JSON" and reaches for an RFC 8785 library will compute a *different* byte
+string (and therefore a different hash) for the same object. The rule is
+pinned exactly here so that never happens silently:
+
+`apl-json-v1` is defined as:
 
 ```python
 json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 ```
 
-- keys sorted lexicographically at every level;
+- keys sorted at every level by Python string comparison, i.e. by Unicode
+  **code point** (this differs from JCS, which sorts by UTF-16 code unit; the
+  two orders diverge for supplementary-plane / astral characters, U+10000 and
+  above — current receipts use fixed ASCII field names, so this case does not
+  arise in practice, but the rule is code-point ordering, not JCS ordering);
 - no insignificant whitespace;
-- non-ASCII characters encoded as UTF-8 (not \\u escapes);
-- numbers must be written without exponent notation and round-trip exactly
-  (P0 emits ratios rounded to at most 6 decimal places).
+- non-ASCII characters encoded as UTF-8 (not `\u` escapes);
+- numbers are serialized by CPython's `json.dumps` shortest round-trip `repr`.
+  This means **exponent notation is permitted where CPython emits it** (for
+  example `round(1/1e6, 6)` serializes as `1e-06`, and large whole-number
+  floats as `1e+16`); the value round-trips exactly. P0 emits exposure ratios
+  rounded to at most 6 decimal places, so the values that actually appear are
+  in a range where this is well defined. (An earlier revision of this document
+  said numbers are written "without exponent notation"; that was a spec-vs-
+  implementation contradiction — the pinned one-liner above does emit exponent
+  form for some in-range values — and has been corrected to match the
+  implementation. This is a documentation correction only: no receipt bytes and
+  no `receipt_hash` change.)
+
+**Relationship to RFC 8785 / JCS (honest limit).** We do **not** claim
+`apl-json-v1` is byte-identical to RFC 8785 for float-free bodies. It diverges
+in at least two independent ways: (1) number/float serialization (`1e-06` vs
+`0.000001`) and (2) object-key ordering (code point vs UTF-16 code unit) for
+astral characters. A stock RFC-8785 verifier is therefore not interchangeable
+with this rule.
+
+**Versioning / migration boundary.** `apl-json-v1` is the only canonicalization
+used by the receipts this document describes. Any future RFC 8785 (or other)
+profile MUST be introduced under a **new canonicalization identifier**, never
+substituted in place: an in-place change would alter existing receipt hashes
+and invalidate already-signed receipts. Because there are two divergence
+classes, we make no claim that such a migration would be cheap or
+hash-preserving.
 
 Because the hash covers the whole body, **any** modified byte — including
 inside `provenance` or `provider_events` — changes `receipt_hash` and breaks
