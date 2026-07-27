@@ -48,6 +48,38 @@ class VerifyError(Exception):
     """Deterministic verification failure with a human-readable reason."""
 
 
+def _no_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
+    """`object_pairs_hook` that fails-close on a repeated JSON object member.
+
+    Plain `json.loads` keeps the LAST value for a duplicated key and silently
+    drops the rest. That is a tamper channel: a receipt could carry a duplicate
+    `receipt_hash`/`signature`/field so that a naive reader (or a second parser)
+    sees a different value than the one this verifier hashes and checks. RFC
+    8259 says names within an object SHOULD be unique and the behaviour of
+    duplicate names is unpredictable -- a signed security receipt must reject
+    them, not gamble. Raises ValueError so both CLI read sites, which already
+    wrap parsing in `except (OSError, ValueError)`, fail-close to exit 1.
+    """
+    seen: set[str] = set()
+    for key, _ in pairs:
+        if key in seen:
+            raise ValueError(f"duplicate JSON object key {key!r} -- a receipt "
+                             "must not repeat a member (fail-close)")
+        seen.add(key)
+    return dict(pairs)
+
+
+def load_receipt_json(text: str) -> dict:
+    """Parse one receipt from JSON text, rejecting duplicate object keys.
+
+    The single parse entry point for receipts: every read site must route
+    through here so the strict duplicate-key rule is enforced uniformly. Same
+    return value as `json.loads` for well-formed input; raises ValueError
+    (json.JSONDecodeError is a ValueError, as is the duplicate-key error) on any
+    malformed or duplicate-key input."""
+    return json.loads(text, object_pairs_hook=_no_duplicate_keys)
+
+
 def canonical_bytes(obj) -> bytes:
     """Canonical JSON per the receipt standard (section 2)."""
     return json.dumps(obj, sort_keys=True, separators=(",", ":"),

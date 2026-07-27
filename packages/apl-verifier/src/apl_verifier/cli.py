@@ -9,11 +9,16 @@ Exit codes: 0 = verified, 1 = failed, 2 = usage.
 """
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
-from .receipt import FAIL_MESSAGE, VALID_MESSAGE, VerifyError, verify_chain
+from .receipt import (
+    FAIL_MESSAGE,
+    VALID_MESSAGE,
+    VerifyError,
+    load_receipt_json,
+    verify_chain,
+)
 
 _USAGE = "usage: apl-verify <receipt.json>... --pubkey key.pem"
 
@@ -35,7 +40,7 @@ def main(argv=None) -> int:
     receipts = []
     for path in argv:
         try:
-            receipts.append(json.loads(Path(path).read_text(encoding="utf-8")))
+            receipts.append(load_receipt_json(Path(path).read_text(encoding="utf-8")))
         except (OSError, ValueError) as exc:
             print(f"{FAIL_MESSAGE} ({path}: {exc})")
             return 1

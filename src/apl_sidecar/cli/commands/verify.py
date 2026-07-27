@@ -7,7 +7,6 @@ resolves the signing key from the user key dir / packaged spec key when no
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from . import _verifier_boot
@@ -18,7 +17,8 @@ def run(receipt_paths: list[str], pubkey: str | None = None) -> int:
     receipts = []
     for path in receipt_paths:
         try:
-            receipts.append(json.loads(Path(path).read_text(encoding="utf-8")))
+            receipts.append(
+                _verifier.load_receipt_json(Path(path).read_text(encoding="utf-8")))
         except (OSError, ValueError) as exc:
             print(f"{_verifier.FAIL_MESSAGE} ({path}: {exc})")
             return 1

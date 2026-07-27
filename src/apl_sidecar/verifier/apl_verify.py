@@ -40,6 +40,7 @@ from apl_verifier import (  # noqa: E402,F401  (re-export)
     canonical_bytes,
     compute_receipt_hash,
     load_public_key,
+    load_receipt_json,
 )
 from apl_verifier.trust import normalize_host as _normalize_host  # noqa: E402,F401
 from apl_verifier.trust import trust_domain as _trust_domain  # noqa: E402,F401
@@ -73,7 +74,6 @@ def main(argv=None) -> int:
     """Old CLI entry: verify a receipt chain, auto-resolving the pubkey when no
     --pubkey is passed (unlike the new pure `apl-verify` console script, which
     requires --pubkey)."""
-    import json
     argv = list(sys.argv[1:] if argv is None else argv)
     pubkey = None
     if "--pubkey" in argv:
@@ -90,7 +90,7 @@ def main(argv=None) -> int:
     receipts = []
     for path in argv:
         try:
-            receipts.append(json.loads(Path(path).read_text(encoding="utf-8")))
+            receipts.append(load_receipt_json(Path(path).read_text(encoding="utf-8")))
         except (OSError, ValueError) as exc:
             print(f"{FAIL_MESSAGE} ({path}: {exc})")
             return 1

@@ -20,6 +20,7 @@ from .receipt import (
     canonical_bytes,
     compute_receipt_hash,
     load_public_key,
+    load_receipt_json,
     verify_chain,
     verify_receipt,
 )
@@ -35,6 +36,7 @@ __all__ = [
     "canonical_bytes",
     "compute_receipt_hash",
     "load_public_key",
+    "load_receipt_json",
     "verify_chain",
     "verify_receipt",
     "VENDOR_TRUST_DOMAINS",
