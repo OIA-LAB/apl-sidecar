@@ -22,6 +22,7 @@ receipt.local.json
 *.egg-info/
 # build backends' output (setuptools / python -m build)
 build/
+packages/apl-verifier/build/
 dist/
 dist-verifier/
 apl-out/
