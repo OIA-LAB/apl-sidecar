@@ -11,6 +11,11 @@ def run(receipt_path: str) -> int:
     if not source.is_file():
         print(f"receipt not found: {source}")
         return 1
+    # NOT_WIRED (intentional): this is a tamper PRODUCER, not a trust-boundary
+    # ingestion site. It reads a source receipt to mutate one field; the strict
+    # duplicate-key parser is deliberately not applied here. The produced copy
+    # is re-verified below via verify.run(), which DOES route through the strict
+    # parser, so any tampered output is still caught on the ingestion side.
     try:
         receipt = json.loads(source.read_text(encoding="utf-8"))
         old_value = receipt["provider_events"][0]["payload_sha256"]

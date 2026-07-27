@@ -2,10 +2,10 @@
 """apl inspect -- show exposure accounting and provenance from a receipt."""
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from . import _common as c
+from . import _verifier_boot
 
 
 def run(receipt_path: str) -> int:
@@ -25,7 +25,14 @@ def run(receipt_path: str) -> int:
     if not p.exists():
         print(f"receipt not found: {p}")
         return 1
-    r = json.loads(p.read_text(encoding="utf-8"))
+    # Ingestion routes through the verifier's strict parser so a duplicate JSON
+    # object key fails-close (clean exit 1) instead of being silently accepted
+    # by json.loads or surfacing as an uncaught traceback later.
+    try:
+        r = _verifier_boot.load_receipt_json(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"receipt could not be read: {exc}")
+        return 1
     policy = c.load_policy_manifest()
 
     print("=" * 64)

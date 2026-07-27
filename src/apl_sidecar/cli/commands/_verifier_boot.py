@@ -62,6 +62,17 @@ def resolve_pubkey_path(signing_key_id: str) -> str:
         f"no public key found for signing_key_id={signing_key_id!r}")
 
 
+def load_receipt_json(text: str) -> dict:
+    """Parse one receipt, routing through the verifier's strict parser.
+
+    Enforces the same duplicate-key fail-close rule the verify entry points
+    use, so chain-load ingestion cannot silently accept a receipt whose
+    duplicated member changes value between parsers. Raises ValueError
+    (json.JSONDecodeError is a ValueError) on malformed or duplicate-key input.
+    """
+    return apl_verifier.load_receipt_json(text)
+
+
 def verify_receipt(receipt: dict, pubkey_path: str | None = None) -> None:
     """Verify a receipt, resolving the pubkey runtime-side when not supplied."""
     path = pubkey_path or resolve_pubkey_path(receipt.get("signing_key_id", ""))

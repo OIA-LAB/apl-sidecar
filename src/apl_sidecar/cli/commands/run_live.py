@@ -329,10 +329,22 @@ def run(example_dir: str, seat_specs: list[str] | None = None,
         return 1
 
     # 1b. CHAIN GATE — refuse to chain onto a receipt that does not verify.
+    # Ingestion of the previous receipt routes through the verifier's strict
+    # parser (load_receipt_json), so a duplicate JSON object key fails-close
+    # here rather than being silently accepted (last-value-wins) by json.loads.
+    # OSError (unreadable file) and ValueError (malformed JSON or duplicate
+    # key) are caught explicitly for a clean exit 1 with a user message; a
+    # verification failure is likewise refused.
     prev_hash = None
     if chain:
         try:
-            prev = json.loads(Path(chain).read_text(encoding="utf-8"))
+            prev = _verifier_boot.load_receipt_json(
+                Path(chain).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            print(f"CHAIN REFUSED -- previous receipt could not be read: {exc}",
+                  file=sys.stderr)
+            return 1
+        try:
             _verifier_boot.verify_receipt(prev)
         except Exception as exc:  # noqa: BLE001 — any failure refuses the chain
             print(f"CHAIN REFUSED -- previous receipt invalid: {exc}", file=sys.stderr)

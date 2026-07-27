@@ -158,6 +158,33 @@ def test_chain_refuses_invalid_previous_receipt(monkeypatch, tmp_path):
     assert transport.calls == []  # fail-close: chain gate fires before any socket
 
 
+def test_chain_refuses_previous_receipt_with_duplicate_key(monkeypatch, tmp_path):
+    """A prior receipt whose JSON text repeats an object member must fail-close
+    at chain-load. json.loads would silently keep the last value; the strict
+    parser (routed via _verifier_boot.load_receipt_json) rejects it, so the run
+    exits 1 with a user message and opens ZERO sockets."""
+    _env(monkeypatch)
+    out1 = tmp_path / "run1"
+    assert run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
+                        output=str(out1), yes=True, transport=FakeTransport()) == 0
+    raw = (out1 / "receipt.live.json").read_text(encoding="utf-8")
+    # Inject a duplicate top-level member into otherwise-valid JSON text.
+    assert raw.lstrip().startswith("{")
+    idx = raw.index("{") + 1
+    dup = raw[:idx] + '\n  "task_type": "SHADOW",' + raw[idx:]
+    # Sanity: stdlib json accepts this (last-wins), proving it is a genuine
+    # duplicate-key document rather than merely malformed JSON.
+    assert json.loads(dup)  # does not raise
+    bad = tmp_path / "dupkey.json"
+    bad.write_text(dup, encoding="utf-8")
+    transport = FakeTransport()
+    code = run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
+                        output=str(tmp_path / "run2"), yes=True,
+                        transport=transport, chain=str(bad))
+    assert code == 1
+    assert transport.calls == []  # fail-close before any socket opens
+
+
 def test_receipt_hashes_loaded_bytes_not_a_re_read(monkeypatch, tmp_path):
     """Single-read guarantee: the receipt must hash the bytes loaded at run
     start, even if the payload file is overwritten mid-run before transmission.

@@ -62,6 +62,24 @@ def test_break_receipt_preserves_original_and_fails_verification(tmp_path: Path)
     else:
         raise AssertionError("tampered receipt verified")
 
+
+def test_inspect_fails_close_on_duplicate_key_receipt(tmp_path: Path, capsys):
+    """inspect ingestion routes through the strict parser: a receipt whose JSON
+    text repeats an object member must exit 1 cleanly (not a traceback and not a
+    last-wins silent accept)."""
+    out = tmp_path / "out"
+    assert demo.run(str(out)) == 0
+    raw = (out / "receipt.json").read_text(encoding="utf-8")
+    idx = raw.index("{") + 1
+    dup = raw[:idx] + '\n  "run_id": "SHADOW",' + raw[idx:]
+    assert json.loads(dup)  # stdlib accepts (last-wins) => genuine duplicate key
+    bad = tmp_path / "dupkey.json"
+    bad.write_text(dup, encoding="utf-8")
+    code = main(["inspect", str(bad)])
+    assert code == 1
+    assert "could not be read" in capsys.readouterr().out
+
+
 def test_preview_and_run_accept_scenario_task_file(tmp_path: Path):
     task = "src/apl_sidecar/examples/00_private_matter/input.original.example.txt"
     assert main(["preview", task]) == 0
