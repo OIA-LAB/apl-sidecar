@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0
+
+Deploy fix: bumped the bundled `apl-verifier` to 0.2.1, which exports
+`load_receipt_json` (used by the duplicate-member/strict-parse path). The
+apl-sidecar dependency pin is now `apl-verifier>=0.2.1,<0.3.0` so a clean
+`pip install apl-sidecar` no longer resolves an older PyPI `apl-verifier` that
+lacks the function.
+
 ## 0.2.2
 
 Packaging fix: the wheel/sdist now ship `spec/apl-oss-demo-key-02.pem` (and the

@@ -26,7 +26,7 @@ from .receipt import (
 )
 from .trust import VENDOR_TRUST_DOMAINS, normalize_host, trust_domain
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     "FAIL_MESSAGE",
