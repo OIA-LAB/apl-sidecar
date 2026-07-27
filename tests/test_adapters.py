@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from adapters.base import ProviderAdapter, ProviderRequest
-from adapters.mock import MockProviderAdapter, default_registry
-from adapters.registry import ProviderRegistry
+from apl_sidecar.adapters.base import ProviderAdapter, ProviderRequest
+from apl_sidecar.adapters.mock import MockProviderAdapter, default_registry
+from apl_sidecar.adapters.registry import ProviderRegistry
 
 
 def test_registry_and_protocol():

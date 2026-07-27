@@ -55,7 +55,7 @@ def _bridge():
     """The runtime-side verify bridge (does key resolution). Imported lazily to
     avoid a hard dependency on the cli package when only the pure helpers are
     used."""
-    from cli.commands import _verifier_boot
+    from apl_sidecar.cli.commands import _verifier_boot
     return _verifier_boot
 
 

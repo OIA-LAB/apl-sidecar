@@ -12,9 +12,9 @@ keys/
 # ...but the repo demo PUBLIC verification key must ship with the repo
 # (fresh clones need it to verify the committed receipts; public key only,
 # CI-checked by tests/test_no_deprecated_terms.py)
-!spec/*.pem
+!src/apl_sidecar/spec/*.pem
 # frozen v0.1.0 conformance vectors ship the demo PUBLIC key too
-!spec/conformance/**/*.pem
+!src/apl_sidecar/spec/conformance/**/*.pem
 # local run artifacts
 out/
 .env

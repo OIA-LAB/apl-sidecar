@@ -5,10 +5,10 @@ import json
 import re
 import socket
 from pathlib import Path
-from cli.apl import main
-from cli.commands import demo
+from apl_sidecar.cli.apl import main
+from apl_sidecar.cli.commands import demo
 from apl_verifier import VerifyError
-from cli.commands._verifier_boot import verify_receipt
+from apl_sidecar.cli.commands._verifier_boot import verify_receipt
 
 
 def test_help_and_demo_artifacts(tmp_path: Path):
@@ -35,7 +35,7 @@ def test_provider_panes_are_perspective_isolated(tmp_path: Path):
     page = (out / "exposure.html").read_text(encoding="utf-8")
     a = re.search(r'<section class="pane" id="mock_provider_a">(.*?)</section>', page, re.S).group(1)
     b = re.search(r'<section class="pane" id="mock_provider_b">(.*?)</section>', page, re.S).group(1)
-    scenario = Path("examples/00_private_matter")
+    scenario = Path("src/apl_sidecar/examples/00_private_matter")
     payload_a = (scenario / "provider_a_payload.txt").read_text(encoding="utf-8").strip()
     payload_b = (scenario / "provider_b_payload.txt").read_text(encoding="utf-8").strip()
     local = json.loads((scenario / "local_only.json").read_text(encoding="utf-8"))
@@ -63,14 +63,14 @@ def test_break_receipt_preserves_original_and_fails_verification(tmp_path: Path)
         raise AssertionError("tampered receipt verified")
 
 def test_preview_and_run_accept_scenario_task_file(tmp_path: Path):
-    task = "examples/00_private_matter/input.original.example.txt"
+    task = "src/apl_sidecar/examples/00_private_matter/input.original.example.txt"
     assert main(["preview", task]) == 0
     assert main(["run", task, "--output", str(tmp_path / "run")]) == 0
 
 
 def test_non_reference_scenario_shows_neutral_assessment(tmp_path: Path):
     out = tmp_path / "out"
-    assert demo.run(str(out), "examples/01_private_code_context") == 0
+    assert demo.run(str(out), "src/apl_sidecar/examples/01_private_code_context") == 0
     assessment = (out / "assessment.md").read_text(encoding="utf-8")
     assert "available only for the bundled reference scenario" in assessment
     assert "Recovered entities" not in assessment

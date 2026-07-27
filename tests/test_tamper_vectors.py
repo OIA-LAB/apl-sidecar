@@ -10,13 +10,13 @@ from pathlib import Path
 import pytest
 
 from apl_verifier import FAIL_MESSAGE, VerifyError
-from cli.apl import main as apl_main
-from cli.commands import _verifier_boot
-from cli.commands import mask
+from apl_sidecar.cli.apl import main as apl_main
+from apl_sidecar.cli.commands import _verifier_boot
+from apl_sidecar.cli.commands import mask
 
 REPO = Path(__file__).resolve().parents[1]
 
-TV = REPO / "spec" / "conformance_vectors" / "tamper_vectors"
+TV = REPO / "src" / "apl_sidecar" / "spec" / "conformance_vectors" / "tamper_vectors"
 
 
 def _load(p):
@@ -42,7 +42,7 @@ def test_all_four_vectors_exist():
 def test_example_tampered_receipt_fails(ex):
     with pytest.raises(VerifyError):
         _verifier_boot.verify_receipt(
-            _load(REPO / "examples" / ex / "tampered_receipt.example.json"))
+            _load(REPO / "src" / "apl_sidecar" / "examples" / ex / "tampered_receipt.example.json"))
 
 
 def test_cli_reports_failure_message(capsys):
@@ -53,11 +53,11 @@ def test_cli_reports_failure_message(capsys):
 
 @pytest.mark.parametrize("ex", ["00_private_matter", "01_private_code_context"])
 def test_mask_leak_check_passes(ex):
-    assert mask.run(str(REPO / "examples" / ex)) == 0
+    assert mask.run(str(REPO / "src" / "apl_sidecar" / "examples" / ex)) == 0
 
 
 def test_single_byte_flip_fails():
-    r = _load(REPO / "examples" / "00_private_matter" / "receipt.json")
+    r = _load(REPO / "src" / "apl_sidecar" / "examples" / "00_private_matter" / "receipt.json")
     r["provenance"]["example_id"] = r["provenance"]["example_id"] + "x"
     with pytest.raises(VerifyError):
         _verifier_boot.verify_receipt(r)

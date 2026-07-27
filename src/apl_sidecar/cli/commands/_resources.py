@@ -37,7 +37,8 @@ def _materialized_tree(package: str, *parts: str) -> Path:
     _TEMP_RESOURCES.append(temp)
     root = Path(temp.name)
     source = resources.files(package).joinpath(*parts)
-    destination = root.joinpath(package, *parts)
+    leaf = package.rsplit(".", 1)[-1]
+    destination = root.joinpath(leaf, *parts)
     _copy_tree(source, destination)
     return destination
 
@@ -47,14 +48,14 @@ def bundled_scenario_path(scenario_id: str) -> Path:
         source = SOURCE_ROOT / "examples" / scenario_id
         if source.is_dir():
             return source
-    return _materialized_tree("examples", scenario_id)
+    return _materialized_tree("apl_sidecar.examples", scenario_id)
 
 
 def playground_root() -> Path:
     if _source_checkout() and (
             SOURCE_ROOT / "app" / "local_playground").is_dir():
         return SOURCE_ROOT
-    playground = _materialized_tree("app", "local_playground")
+    playground = _materialized_tree("apl_sidecar.app", "local_playground")
     return playground.parents[1]
 
 
@@ -63,7 +64,7 @@ def read_spec_text(name: str) -> str:
         source = SOURCE_ROOT / "spec" / name
         if source.is_file():
             return source.read_text(encoding="utf-8")
-    return resources.files("spec").joinpath(name).read_text(encoding="utf-8")
+    return resources.files("apl_sidecar.spec").joinpath(name).read_text(encoding="utf-8")
 
 
 def read_spec_bytes(name: str) -> bytes:
@@ -71,7 +72,7 @@ def read_spec_bytes(name: str) -> bytes:
         source = SOURCE_ROOT / "spec" / name
         if source.is_file():
             return source.read_bytes()
-    return resources.files("spec").joinpath(name).read_bytes()
+    return resources.files("apl_sidecar.spec").joinpath(name).read_bytes()
 
 
 def spec_key_path(name: str) -> Path:
@@ -87,7 +88,7 @@ def spec_key_path(name: str) -> Path:
         if source.is_file():
             return source
         raise FileNotFoundError(name)
-    resource = resources.files("spec").joinpath(name)
+    resource = resources.files("apl_sidecar.spec").joinpath(name)
     if not resource.is_file():
         raise FileNotFoundError(name)
     temp = tempfile.TemporaryDirectory(prefix="apl-sidecar-key-")

@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from cli import apl
-from cli.commands import _common, _resources
+from apl_sidecar.cli import apl
+from apl_sidecar.cli.commands import _common, _resources
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -116,35 +116,35 @@ def test_documented_named_seat_commands_parse(monkeypatch):
 
     monkeypatch.setattr(apl.cmd_run_live, "run", fake_run)
     assert apl.main([
-        "run-live", "examples/00_private_matter",
+        "run-live", "src/apl_sidecar/examples/00_private_matter",
         "--seat", "mock_provider_a=anthropic",
         "--seat", "mock_provider_b=openai", "--yes",
     ]) == 0
     assert calls[-1][1]["seat_specs"] == [
         "mock_provider_a=anthropic", "mock_provider_b=openai"]
     assert apl.main([
-        "run-live", "examples/02_market_entry_three_way",
+        "run-live", "src/apl_sidecar/examples/02_market_entry_three_way",
         "--seat", "pricing=anthropic", "--seat", "channel=openai",
         "--seat", "risk=openai", "--yes",
     ]) == 0
     assert calls[-1][1]["seat_specs"] == [
         "pricing=anthropic", "channel=openai", "risk=openai"]
     assert apl.main([
-        "run-live", "examples/02_market_entry_three_way",
+        "run-live", "src/apl_sidecar/examples/02_market_entry_three_way",
         "--seat", "pricing=openai", "--seat", "channel=openai",
         "--seat", "risk=openai", "--yes",
     ]) == 0
     assert calls[-1][1]["seat_specs"] == [
         "pricing=openai", "channel=openai", "risk=openai"]
     assert apl.main([
-        "run-live", "examples/00_private_matter",
+        "run-live", "src/apl_sidecar/examples/00_private_matter",
         "--seat", "mock_provider_a=openai",
         "--seat", "mock_provider_b=openai", "--yes",
     ]) == 0
     assert calls[-1][1]["seat_specs"] == [
         "mock_provider_a=openai", "mock_provider_b=openai"]
     assert apl.main([
-        "run-live", "examples/01_private_code_context",
+        "run-live", "src/apl_sidecar/examples/01_private_code_context",
         "--seat", "mock_provider_a=anthropic",
         "--seat", "mock_provider_b=openai",
         "--output", "apl-live-out-2",

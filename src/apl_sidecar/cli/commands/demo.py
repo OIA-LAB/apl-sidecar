@@ -5,8 +5,8 @@ import hashlib
 import html
 import json
 from pathlib import Path
-from adapters.base import ProviderRequest
-from adapters.mock import default_registry
+from apl_sidecar.adapters.base import ProviderRequest
+from apl_sidecar.adapters.mock import default_registry
 from . import _common as c
 from . import _resources
 from . import _signing, run_mock, verify

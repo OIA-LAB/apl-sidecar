@@ -8,8 +8,8 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
-from adapters.base import ProviderRequest
-from adapters.mock import default_registry
+from apl_sidecar.adapters.base import ProviderRequest
+from apl_sidecar.adapters.mock import default_registry
 
 HOST = "127.0.0.1"
 MAX_BODY_BYTES = 64 * 1024

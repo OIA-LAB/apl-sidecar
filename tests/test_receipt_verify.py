@@ -10,15 +10,15 @@ import json
 from pathlib import Path
 
 from apl_verifier import VALID_MESSAGE, VerifyError
-from cli.apl import main as apl_main
-from cli.commands import _verifier_boot
+from apl_sidecar.cli.apl import main as apl_main
+from apl_sidecar.cli.commands import _verifier_boot
 
 REPO = Path(__file__).resolve().parents[1]
 
-EXAMPLES = [REPO / "examples" / "00_private_matter",
-            REPO / "examples" / "01_private_code_context"]
-CHAIN = [REPO / "spec" / "conformance_vectors" / "valid_chain" / "receipt_001.json",
-         REPO / "spec" / "conformance_vectors" / "valid_chain" / "receipt_002.json"]
+EXAMPLES = [REPO / "src" / "apl_sidecar" / "examples" / "00_private_matter",
+            REPO / "src" / "apl_sidecar" / "examples" / "01_private_code_context"]
+CHAIN = [REPO / "src" / "apl_sidecar" / "spec" / "conformance_vectors" / "valid_chain" / "receipt_001.json",
+         REPO / "src" / "apl_sidecar" / "spec" / "conformance_vectors" / "valid_chain" / "receipt_002.json"]
 
 
 def _load(p):

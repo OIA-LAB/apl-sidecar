@@ -159,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "playground":
         return _playground(rest)
     if cmd == "proxy":
-        from relay.openai_proxy import serve
+        from apl_sidecar.relay.openai_proxy import serve
 
         port = 8793
         if rest:

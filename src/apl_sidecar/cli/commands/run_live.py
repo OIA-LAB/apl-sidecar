@@ -36,10 +36,10 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from adapters.base import ProviderRequest
-from adapters.byok._http import ByokConfigError, TransportError
-from adapters.byok.anthropic_provider import AnthropicAdapter
-from adapters.byok.openai_provider import OpenAICompatAdapter
+from apl_sidecar.adapters.base import ProviderRequest
+from apl_sidecar.adapters.byok._http import ByokConfigError, TransportError
+from apl_sidecar.adapters.byok.anthropic_provider import AnthropicAdapter
+from apl_sidecar.adapters.byok.openai_provider import OpenAICompatAdapter
 
 from . import _common as c
 from . import _signing

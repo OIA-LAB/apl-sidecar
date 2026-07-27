@@ -5,8 +5,8 @@ import threading
 
 import pytest
 
-from cli.apl import main
-from relay.openai_proxy import HOST, create_server, handle_chat
+from apl_sidecar.cli.apl import main
+from apl_sidecar.relay.openai_proxy import HOST, create_server, handle_chat
 
 
 def test_completion_shape_and_evidence_without_prompt_echo():

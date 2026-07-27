@@ -9,11 +9,11 @@ import json
 import shutil
 from pathlib import Path
 
-from cli.commands import run_live
-from cli.commands._verifier_boot import verify_receipt
+from apl_sidecar.cli.commands import run_live
+from apl_sidecar.cli.commands._verifier_boot import verify_receipt
 
 REPO = Path(__file__).resolve().parents[1]
-EXAMPLE = REPO / "examples" / "00_private_matter"
+EXAMPLE = REPO / "src" / "apl_sidecar" / "examples" / "00_private_matter"
 KEY = "test-key-not-real-1234567890abcdef"  # deliberately NOT sk- prefixed: repo secret-hygiene gate
 
 
@@ -27,7 +27,7 @@ class FakeTransport:
 
     def __call__(self, url, headers, body, timeout=None, secrets=(), **_):
         self.calls.append(url)
-        from adapters.byok._http import TransportError
+        from apl_sidecar.adapters.byok._http import TransportError
         if any(host in url for host in self.fail_hosts):
             raise TransportError("provider returned HTTP 500: synthetic failure")
         if "/v1/messages" in url:
@@ -65,7 +65,7 @@ def test_run_live_full_flow(monkeypatch, tmp_path):
     assert events["byok_openai_mock_provider_b"]["response_chars"] == len("live answer (test-model-b)")
     # the live receipt with its optional event fields is schema-valid
     from tests._schema_check import check
-    schema = json.loads((REPO / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
+    schema = json.loads((REPO / "src" / "apl_sidecar" / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
     assert check(receipt, schema) == []
     # key hygiene: no key material in any artifact
     for artifact in out.iterdir():
@@ -130,14 +130,14 @@ def test_chain_links_runs_into_verifiable_trail(monkeypatch, tmp_path):
     out1, out2 = tmp_path / "run1", tmp_path / "run2"
     assert run_live.run(str(EXAMPLE), seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"],
                         output=str(out1), yes=True, transport=FakeTransport()) == 0
-    assert run_live.run(str(REPO / "examples" / "01_private_code_context"),
+    assert run_live.run(str(REPO / "src" / "apl_sidecar" / "examples" / "01_private_code_context"),
                         seat_specs=["mock_provider_a=anthropic", "mock_provider_b=openai"], output=str(out2), yes=True,
                         transport=FakeTransport(),
                         chain=str(out1 / "receipt.live.json")) == 0
     r1 = json.loads((out1 / "receipt.live.json").read_text(encoding="utf-8"))
     r2 = json.loads((out2 / "receipt.live.json").read_text(encoding="utf-8"))
     assert r2["prev_receipt_hash"] == r1["receipt_hash"]
-    from cli.commands._verifier_boot import verify_chain
+    from apl_sidecar.cli.commands._verifier_boot import verify_chain
     verify_chain([r1, r2])
 
 
@@ -170,7 +170,7 @@ def test_receipt_hashes_loaded_bytes_not_a_re_read(monkeypatch, tmp_path):
     payload_b = ex / "provider_b_payload.txt"
     original_a = payload_a.read_text(encoding="utf-8")
     original_b = payload_b.read_text(encoding="utf-8")
-    from cli.commands import _common as c
+    from apl_sidecar.cli.commands import _common as c
     loaded_sha_a = c.text_sha256(original_a)
     loaded_sha_b = c.text_sha256(original_b)
 
@@ -230,7 +230,7 @@ def test_unknown_completion_is_warned_and_signed(monkeypatch, tmp_path, capsys):
     err = capsys.readouterr().err
     assert 'completion="unknown"' in err
     from tests._schema_check import check
-    schema = json.loads((REPO / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
+    schema = json.loads((REPO / "src" / "apl_sidecar" / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
     assert check(receipt, schema) == []
 
 

@@ -11,7 +11,7 @@ that the runtime uses that very implementation (no second copy to drift).
 import pytest
 
 import apl_verifier
-from cli.commands import _common as c
+from apl_sidecar.cli.commands import _common as c
 
 # (raw endpoint host, expected normalized host, expected trust domain)
 HOST_TABLE = [

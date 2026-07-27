@@ -14,15 +14,15 @@ import pytest
 
 from apl_verifier import VerifyError
 from apl_verifier.receipt import _check_trust_domain_consistency
-from cli.commands import _common as c
-from cli.commands import run_live, run_mock
-from cli.commands._verifier_boot import verify_receipt
+from apl_sidecar.cli.commands import _common as c
+from apl_sidecar.cli.commands import run_live, run_mock
+from apl_sidecar.cli.commands._verifier_boot import verify_receipt
 from tests._schema_check import check as schema_check
 from tests.test_run_live import KEY, FakeTransport
 
 REPO = Path(__file__).resolve().parents[1]
-THREE_WAY = REPO / "examples" / "02_market_entry_three_way"
-LEGACY = REPO / "examples" / "00_private_matter"
+THREE_WAY = REPO / "src" / "apl_sidecar" / "examples" / "02_market_entry_three_way"
+LEGACY = REPO / "src" / "apl_sidecar" / "examples" / "00_private_matter"
 
 
 def _env(monkeypatch):
@@ -120,7 +120,7 @@ def test_three_distinct_trust_domains(monkeypatch, tmp_path):
         receipt["max_single_trust_domain_exposure"]
     assert receipt["no_single_trust_domain_received_all_fragments"] is True
     # schema: additive v0.2 receipt still validates
-    schema = json.loads((REPO / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
+    schema = json.loads((REPO / "src" / "apl_sidecar" / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
     assert not schema_check(receipt, schema)
 
 
@@ -247,7 +247,7 @@ def test_exposure_ratio_over_one_signs_validates_and_verifies(monkeypatch, tmp_p
     assert per_seat["byok_openai_mock_provider_a"] > 1.0
     assert receipt["max_single_trust_domain_exposure"] > 1.0
     verify_receipt(receipt)  # verifier recomputes the >1 aggregate happily
-    schema = json.loads((REPO / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
+    schema = json.loads((REPO / "src" / "apl_sidecar" / "spec" / "receipt.schema.json").read_text(encoding="utf-8"))
     assert not schema_check(receipt, schema)
 
 
@@ -275,7 +275,7 @@ def test_verifier_rejects_duplicate_seat_id(monkeypatch, tmp_path):
 
 def test_signing_key_id_traversal_rejected(monkeypatch, tmp_path):
     from apl_verifier import load_public_key
-    from cli.commands._verifier_boot import resolve_pubkey_path
+    from apl_sidecar.cli.commands._verifier_boot import resolve_pubkey_path
     receipt = _fresh_receipt(monkeypatch, tmp_path,
                              ["pricing=openai", "channel=openai", "risk=openai"])
     receipt["signing_key_id"] = "../../../../home/victim/.ssh/id"
@@ -303,7 +303,7 @@ def test_run_mock_three_way_signs_and_verifies(tmp_path):
 
 
 def test_preview_and_mask_three_way(capsys):
-    from cli.commands import mask, preview
+    from apl_sidecar.cli.commands import mask, preview
     assert mask.run(str(THREE_WAY)) == 0
     assert preview.run(str(THREE_WAY)) == 0
     out = capsys.readouterr().out
@@ -311,7 +311,7 @@ def test_preview_and_mask_three_way(capsys):
 
 
 def test_run_live_help_documents_named_seats():
-    apl = (REPO / "cli" / "apl.py").read_text(encoding="utf-8")
+    apl = (REPO / "src" / "apl_sidecar" / "cli" / "apl.py").read_text(encoding="utf-8")
     assert "--seat FRAGMENT_ID=KIND" in apl
     assert "2-5" in apl
 

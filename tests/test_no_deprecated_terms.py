@@ -57,7 +57,7 @@ def test_no_deprecated_vocabulary():
 
 
 def test_canonical_term_present_where_expected():
-    receipt = (REPO / "examples" / "00_private_matter" / "receipt.json").read_text(
+    receipt = (REPO / "src" / "apl_sidecar" / "examples" / "00_private_matter" / "receipt.json").read_text(
         encoding="utf-8")
     assert "no_single_provider_saw_full" in receipt
 
@@ -79,7 +79,7 @@ def test_no_private_keys_committed():
     # a private key git WOULD ship always does. The real security property is the
     # PRIVATE-material check below; the location check is defense-in-depth. This
     # gate is permanently enabled: no --deselect.
-    spec_dir = REPO / "spec"
+    spec_dir = REPO / "src" / "apl_sidecar" / "spec"
     for f in _git_file_set():
         if f.suffix.lower() != ".pem":
             continue
@@ -97,10 +97,10 @@ def test_demo_public_key_is_git_tracked():
     TRACKED, and only track public material.
     """
     import subprocess
-    out = subprocess.run(["git", "ls-files", "spec/"], cwd=REPO,
+    out = subprocess.run(["git", "ls-files", "src/apl_sidecar/spec/"], cwd=REPO,
                          capture_output=True, text=True, check=True).stdout
     tracked = [line.strip() for line in out.splitlines()]
-    assert "spec/apl-oss-demo-key.pem" in tracked, \
+    assert "src/apl_sidecar/spec/apl-oss-demo-key.pem" in tracked, \
         "repo demo PUBLIC key must be git-tracked for fresh-clone verify"
     for name in tracked:
         if name.endswith(".pem"):
@@ -109,7 +109,7 @@ def test_demo_public_key_is_git_tracked():
 
 
 def test_playground_has_no_external_origins():
-    app = REPO / "app" / "local_playground"
+    app = REPO / "src" / "apl_sidecar" / "app" / "local_playground"
     for f in app.glob("*"):
         if f.suffix.lower() not in (".html", ".js", ".css"):
             continue

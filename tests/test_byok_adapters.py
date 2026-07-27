@@ -2,10 +2,10 @@
 """BYOK adapters: offline unit tests. No socket is ever opened here."""
 import pytest
 
-from adapters.base import ProviderAdapter, ProviderRequest
-from adapters.byok._http import ByokConfigError, TransportError, _scrub
-from adapters.byok.anthropic_provider import AnthropicAdapter
-from adapters.byok.openai_provider import OpenAICompatAdapter, is_loopback
+from apl_sidecar.adapters.base import ProviderAdapter, ProviderRequest
+from apl_sidecar.adapters.byok._http import ByokConfigError, TransportError, _scrub
+from apl_sidecar.adapters.byok.anthropic_provider import AnthropicAdapter
+from apl_sidecar.adapters.byok.openai_provider import OpenAICompatAdapter, is_loopback
 
 KEY = "test-key-not-real-1234567890abcdef"  # deliberately NOT sk- prefixed: repo secret-hygiene gate
 

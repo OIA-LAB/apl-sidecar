@@ -16,7 +16,7 @@ QUALIFIERS = (
 
 def public_files():
     yield REPO / "README.md"
-    for root in (REPO / "docs", REPO / "examples", REPO / "app"):
+    for root in (REPO / "docs", REPO / "src" / "apl_sidecar" / "examples", REPO / "src" / "apl_sidecar" / "app"):
         for path in root.rglob("*"):
             if path.is_file() and path.suffix.lower() in {".md", ".txt", ".html", ".js"}:
                 yield path

@@ -14,8 +14,8 @@ import time
 from . import _common as c
 from . import _signing
 
-from adapters.base import ProviderRequest
-from adapters.mock import default_registry
+from apl_sidecar.adapters.base import ProviderRequest
+from apl_sidecar.adapters.mock import default_registry
 
 
 def build_receipt_body(paths: dict, responses: dict) -> dict:

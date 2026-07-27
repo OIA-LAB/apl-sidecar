@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(REPO / "relay"))
+sys.path.insert(0, str(REPO / "src" / "apl_sidecar" / "relay"))
 
 from relay_server import RelayState, handle_demo_run  # noqa: E402
 
