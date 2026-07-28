@@ -19,6 +19,12 @@ comments track the actual `apl-verifier>=0.3.0,<0.4.0` pin and drop the stale
 for reading receipts -- use `apl_verifier.load_receipt_json` there. No behavior
 or release-logic changes.
 
+CI fix: the installed-wheel smoke's measurement-floor probe now imports the
+packaged modules under their `apl_sidecar.` namespace (`apl_sidecar.examples`,
+`apl_sidecar.spec`) after the src-layout move; the old bare `examples`/`spec`
+names no longer exist in an installed wheel and raised `ModuleNotFoundError`,
+false-blocking sidecar-publish. Probe-only change; no runtime code touched.
+
 ## 0.2.2
 
 Packaging fix: the wheel/sdist now ship `spec/apl-oss-demo-key-02.pem` (and the

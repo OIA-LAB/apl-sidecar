@@ -44,11 +44,11 @@ def measurement_floor(python: Path, apl: Path, work: Path,
     probe = subprocess.run(
         [str(python), "-c",
          "from importlib import resources;"
-         "import examples, spec;"
-         "assert 'site-packages' in str(resources.files('spec')),"
-         "  'CWD SHADOW: spec=%s' % resources.files('spec');"
-         "print(resources.files('examples'));"
-         "print(resources.files('spec'))"],
+         "import apl_sidecar.examples, apl_sidecar.spec;"
+         "assert 'site-packages' in str(resources.files('apl_sidecar.spec')),"
+         "  'CWD SHADOW: spec=%s' % resources.files('apl_sidecar.spec');"
+         "print(resources.files('apl_sidecar.examples'));"
+         "print(resources.files('apl_sidecar.spec'))"],
         cwd=work, env=env, text=True,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     print(f"$ python -c '<probe resources>'\n{probe.stdout}")
