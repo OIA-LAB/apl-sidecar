@@ -28,14 +28,15 @@ def _load(p):
     "tamper_provider_changed.json",
     "tamper_prev_hash_changed.json",
     "tamper_signature_removed.json",
+    "tamper_nonfinite_exposure.json",
 ])
 def test_tamper_vector_fails(name):
     with pytest.raises(VerifyError):
         _verifier_boot.verify_receipt(_load(TV / name))
 
 
-def test_all_four_vectors_exist():
-    assert len(list(TV.glob("*.json"))) == 4
+def test_all_tamper_vectors_exist():
+    assert len(list(TV.glob("*.json"))) == 5
 
 
 @pytest.mark.parametrize("ex", ["00_private_matter", "01_private_code_context"])

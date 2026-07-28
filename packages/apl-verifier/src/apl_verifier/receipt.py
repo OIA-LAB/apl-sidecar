@@ -16,6 +16,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import math
 import re
 from pathlib import Path
 
@@ -69,21 +70,47 @@ def _no_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
     return dict(pairs)
 
 
+def _reject_nonfinite_literal(token: str):
+    """`parse_constant` hook that fails-close on the non-finite JSON literals.
+
+    Plain `json.loads` accepts the bare tokens `NaN`, `Infinity` and
+    `-Infinity` (a CPython extension), and plain `json.dumps` re-emits them
+    verbatim. That is a canonicalisation hole: a receipt could carry
+    `"max_single_provider_exposure": NaN`, hash and sign stably under
+    apl-json-v1, yet be unparseable by a strict JSON / RFC 8785 verifier
+    (which forbids non-finite numbers) -- so it would not be independently
+    verifiable, and any `abs(claimed - recomputed) > tol` consistency check
+    silently accepts it because every comparison with NaN is False. Receipts
+    must contain only finite numbers; reject at parse. Raises ValueError so the
+    CLI read sites (which wrap parsing in `except (OSError, ValueError)`)
+    fail-close to exit 1."""
+    raise ValueError(f"non-finite JSON number {token!r} -- a receipt must "
+                     "contain only finite numbers (fail-close)")
+
+
 def load_receipt_json(text: str) -> dict:
-    """Parse one receipt from JSON text, rejecting duplicate object keys.
+    """Parse one receipt from JSON text, rejecting duplicate object keys and
+    non-finite numbers.
 
     The single parse entry point for receipts: every read site must route
-    through here so the strict duplicate-key rule is enforced uniformly. Same
-    return value as `json.loads` for well-formed input; raises ValueError
-    (json.JSONDecodeError is a ValueError, as is the duplicate-key error) on any
-    malformed or duplicate-key input."""
-    return json.loads(text, object_pairs_hook=_no_duplicate_keys)
+    through here so the strict duplicate-key and finite-number rules are
+    enforced uniformly. Same return value as `json.loads` for well-formed
+    input; raises ValueError (json.JSONDecodeError is a ValueError, as are the
+    duplicate-key and non-finite errors) on any malformed, duplicate-key or
+    non-finite input."""
+    return json.loads(text, object_pairs_hook=_no_duplicate_keys,
+                      parse_constant=_reject_nonfinite_literal)
 
 
 def canonical_bytes(obj) -> bytes:
-    """Canonical JSON per the receipt standard (section 2)."""
+    """Canonical JSON per the receipt standard (section 2).
+
+    `allow_nan=False`: apl-json-v1 admits only finite numbers, matching RFC
+    8785. Defence in depth alongside the parse-time `parse_constant` guard, so
+    a NaN/Infinity reaching this function via the in-memory API (not the JSON
+    parser) raises ValueError rather than emitting a non-interoperable token."""
     return json.dumps(obj, sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=False).encode("utf-8")
+                      ensure_ascii=False, allow_nan=False).encode("utf-8")
 
 
 def compute_receipt_hash(receipt: dict) -> str:
@@ -92,7 +119,26 @@ def compute_receipt_hash(receipt: dict) -> str:
     return hashlib.sha256(canonical_bytes(body)).hexdigest()
 
 
+def _reject_nonfinite_numbers(obj, path: str = "receipt") -> None:
+    """Fail-close on any non-finite float anywhere in an in-memory receipt.
+
+    The parse-time `parse_constant` guard covers receipts read from JSON text;
+    this covers the library API where `verify_receipt(dict)` is called with a
+    dict built in memory, so a NaN/Infinity raises a clean VerifyError instead
+    of a raw ValueError escaping from `canonical_bytes`."""
+    if isinstance(obj, float) and not math.isfinite(obj):
+        raise VerifyError(f"non-finite number at {path} -- a receipt must "
+                          "contain only finite numbers")
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            _reject_nonfinite_numbers(v, f"{path}.{k}")
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            _reject_nonfinite_numbers(v, f"{path}[{i}]")
+
+
 def _check_shape(receipt: dict) -> None:
+    _reject_nonfinite_numbers(receipt)
     missing = [f for f in REQUIRED_FIELDS if f not in receipt]
     if missing:
         raise VerifyError(f"missing required fields: {', '.join(missing)}")
@@ -130,6 +176,11 @@ def _check_shape(receipt: dict) -> None:
     _reject_duplicates("provider_events seat_id",
                        [e["seat_id"] for e in receipt["provider_events"]
                         if "seat_id" in e])
+    for x in receipt["single_provider_exposure"]:
+        if not isinstance(x.get("exposure_ratio"), (int, float)) \
+                or isinstance(x.get("exposure_ratio"), bool):
+            raise VerifyError("single_provider_exposure entry lacks a numeric "
+                              "exposure_ratio")
     _reject_duplicates("single_provider_exposure provider_id",
                        [x.get("provider_id")
                         for x in receipt["single_provider_exposure"]])
@@ -246,12 +297,59 @@ def _check_trust_domain_consistency(receipt: dict) -> None:
                 "no_single_trust_domain_received_all_fragments is "
                 f"{receipt['no_single_trust_domain_received_all_fragments']}, "
                 f"recomputed {recomputed_flag} from the signed seat sets")
+    # In the n-way model a "provider" is a trust domain, so BOTH
+    # max_single_trust_domain_exposure and max_single_provider_exposure equal
+    # the largest per-domain aggregate here. (single_provider_exposure carries
+    # the per-SEAT ratios in this model; its max is max_single_seat_exposure,
+    # checked in _check_max_single_seat.)
     for field in ("max_single_trust_domain_exposure", "max_single_provider_exposure"):
         value = round(max(recomputed.values(), default=0.0), 6)
         if field in receipt and abs(receipt[field] - value) > 1e-6:
             raise VerifyError(f"{field} is {receipt[field]}, recomputed {value}")
     # (c) max_single_seat_exposure, from the per-seat ratios.
     _check_max_single_seat(receipt, events, seat_ratio)
+
+
+def _check_provider_headline(receipt: dict) -> None:
+    """Re-derive the provider-level headline claims from the signed data. The
+    exposure model (docs/exposure_model.md) states these are 'recomputable from
+    the receipt by anyone', but before this the verifier only re-derived the
+    trust-domain aggregates — so a v0.1 receipt (no trust_domain_exposure) could
+    carry a max / 'no provider saw full' claim its own signed data contradicts
+    and still verify.
+
+      - max_single_provider_exposure: on the v0.1 path (no trust_domain_exposure)
+        single_provider_exposure is genuinely per-provider, so the claim must
+        equal round(max(exposure_ratio), 6). On the v0.2 (n-way) path a provider
+        is a trust domain and this field is the per-domain aggregate, already
+        re-derived in _check_trust_domain_consistency — so skip it here to avoid
+        conflating the per-domain aggregate with the per-seat max.
+      - no_single_provider_saw_full == not any(payload_sha256 == original_task_sha256),
+        checked on any path but only when original_task_sha256 is present — it is
+        the only signed field that reproduces the producer's `payload == original`
+        test; a ratio-only shortcut would false-reject a same-length,
+        different-content payload. Making original_task_sha256 a required signed
+        field in a future receipt version would let this run unconditionally.
+    """
+    if receipt.get("trust_domain_exposure") is None \
+            and "max_single_provider_exposure" in receipt:
+        ratios = [x["exposure_ratio"] for x in receipt["single_provider_exposure"]]
+        expected = round(max(ratios, default=0.0), 6)
+        if abs(receipt["max_single_provider_exposure"] - expected) > 1e-6:
+            raise VerifyError(
+                f"max_single_provider_exposure is "
+                f"{receipt['max_single_provider_exposure']}, recomputed "
+                f"{expected} from single_provider_exposure")
+    orig = receipt.get("original_task_sha256")
+    if orig is not None and "no_single_provider_saw_full" in receipt:
+        saw_full = any(ev.get("payload_sha256") == orig
+                       for ev in receipt["provider_events"])
+        if receipt["no_single_provider_saw_full"] != (not saw_full):
+            raise VerifyError(
+                "no_single_provider_saw_full is "
+                f"{receipt['no_single_provider_saw_full']}, recomputed "
+                f"{not saw_full} from provider payload_sha256 vs "
+                "original_task_sha256")
 
 
 def _check_max_single_seat(receipt: dict, events: list, seat_ratio: dict) -> None:
@@ -276,6 +374,7 @@ def verify_receipt(receipt: dict, pubkey_path: str) -> None:
     `pubkey_path` is required — the caller supplies the public key to trust.
     """
     _check_shape(receipt)
+    _check_provider_headline(receipt)
     _check_trust_domain_consistency(receipt)
     recomputed = compute_receipt_hash(receipt)
     if recomputed != receipt["receipt_hash"]:
