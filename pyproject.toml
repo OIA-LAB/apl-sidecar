@@ -13,7 +13,7 @@ license-files = ["LICENSE", "LICENSES/*"]
 dependencies = ["cryptography", "PyYAML", "apl-verifier>=0.3.0,<0.4.0"]
 
 [project.optional-dependencies]
-dev = ["jsonschema", "pytest", "ruff"]
+dev = ["jsonschema", "pytest", "ruff==0.11.13"]
 
 [project.scripts]
 apl = "apl_sidecar.cli.apl:main"
