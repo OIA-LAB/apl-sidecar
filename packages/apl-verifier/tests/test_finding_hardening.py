@@ -27,6 +27,9 @@ _REPO = Path(__file__).resolve().parents[3]
 _SPEC = _REPO / "src" / "apl_sidecar" / "spec"
 _V01 = _SPEC / "conformance_vectors" / "valid_chain" / "receipt_001.json"
 _WITH_ORIG = _REPO / "src" / "apl_sidecar" / "examples" / "00_private_matter" / "receipt.json"
+_NONFINITE_VECTOR = (
+    _SPEC / "conformance_vectors" / "tamper_vectors" / "tamper_nonfinite_exposure.json"
+)
 _ANY_PEM = str(_SPEC / "apl-oss-demo-key.pem")  # never reached: checks raise first
 
 
@@ -38,8 +41,16 @@ def _load(p: Path) -> dict:
 
 @pytest.mark.parametrize("literal", ["NaN", "Infinity", "-Infinity"])
 def test_load_rejects_nonfinite_literals(literal):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="non-finite"):
         load_receipt_json('{"max_single_provider_exposure": %s}' % literal)
+
+
+@pytest.mark.parametrize("value", ["1e400", "-1e400"])
+def test_load_rejects_overflow_to_inf(value):
+    """Syntactically valid exponent values that overflow to ±inf must be
+    rejected at parse time, not accepted silently and caught later."""
+    with pytest.raises(ValueError, match="non-finite"):
+        load_receipt_json('{"exposure_ratio": %s}' % value)
 
 
 def test_canonical_bytes_refuses_nan():
@@ -88,3 +99,18 @@ def test_saw_full_true_lie_caught_when_a_provider_saw_full():
     r["no_single_provider_saw_full"] = True
     with pytest.raises(VerifyError, match="no_single_provider_saw_full"):
         verify_receipt(r, _ANY_PEM)
+
+
+# --- Finding A: tamper vector is rejected specifically at parse boundary ------
+
+@pytest.mark.skipif(
+    not _NONFINITE_VECTOR.is_file(), reason="spec vectors only in a checkout"
+)
+def test_nonfinite_tamper_vector_rejected_at_parse_boundary():
+    """The tamper_nonfinite_exposure.json vector carries `NaN` as a bare token.
+    Passing its raw text through load_receipt_json must raise ValueError with
+    "non-finite" — proving the parse-time finite-number guard caused the
+    failure, attributably, rather than a pre-existing receipt_hash mismatch."""
+    raw = _NONFINITE_VECTOR.read_text(encoding="utf-8")
+    with pytest.raises(ValueError, match="non-finite"):
+        load_receipt_json(raw)

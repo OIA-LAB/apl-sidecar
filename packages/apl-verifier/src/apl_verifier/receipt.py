@@ -88,6 +88,25 @@ def _reject_nonfinite_literal(token: str):
                      "contain only finite numbers (fail-close)")
 
 
+def _finite_float(s: str) -> float:
+    """`parse_float` hook that fails-close on numeric values that overflow to
+    a non-finite float, such as `1e400` → `inf`.
+
+    `parse_constant` only catches the bare tokens `NaN`, `Infinity`, and
+    `-Infinity`. Syntactically valid exponent notation that overflows
+    (e.g. `1e400`, `-1e400`) passes through `parse_constant` unnoticed and
+    silently becomes `math.inf` or `-math.inf`. The fix: replace the float
+    conversion with one that raises ValueError on a non-finite result, so the
+    same CLI fail-close path applies. This also keeps the parse and the
+    `allow_nan=False` serialisation guard consistent for out-of-range inputs."""
+    value = float(s)
+    if not math.isfinite(value):
+        raise ValueError(
+            f"non-finite numeric value {s!r} (overflows to infinity) -- a "
+            "receipt must contain only finite numbers (fail-close)")
+    return value
+
+
 def load_receipt_json(text: str) -> dict:
     """Parse one receipt from JSON text, rejecting duplicate object keys and
     non-finite numbers.
@@ -99,7 +118,8 @@ def load_receipt_json(text: str) -> dict:
     duplicate-key and non-finite errors) on any malformed, duplicate-key or
     non-finite input."""
     return json.loads(text, object_pairs_hook=_no_duplicate_keys,
-                      parse_constant=_reject_nonfinite_literal)
+                      parse_constant=_reject_nonfinite_literal,
+                      parse_float=_finite_float)
 
 
 def canonical_bytes(obj) -> bytes:
@@ -155,6 +175,19 @@ def _check_shape(receipt: dict) -> None:
     if not _KEY_ID.match(str(receipt["signing_key_id"])):
         raise VerifyError("signing_key_id must match [A-Za-z0-9._-]{1,64} "
                           "(no path separators)")
+    if not isinstance(receipt["no_single_provider_saw_full"], bool):
+        raise VerifyError(
+            "no_single_provider_saw_full must be a boolean, not "
+            f"{type(receipt['no_single_provider_saw_full']).__name__!r}")
+    msp = receipt["max_single_provider_exposure"]
+    if not isinstance(msp, (int, float)) or isinstance(msp, bool):
+        raise VerifyError("max_single_provider_exposure must be numeric")
+    if msp < 0:
+        raise VerifyError(
+            f"max_single_provider_exposure must be non-negative (got {msp})")
+    orig_sha = receipt.get("original_task_sha256")
+    if orig_sha is not None and not _HEX64.match(str(orig_sha)):
+        raise VerifyError("original_task_sha256 must be 64 lower-hex chars")
     for ev in receipt["provider_events"]:
         if not _HEX64.match(str(ev.get("payload_sha256", ""))):
             raise VerifyError("provider_events payload_sha256 malformed")
@@ -181,12 +214,34 @@ def _check_shape(receipt: dict) -> None:
                 or isinstance(x.get("exposure_ratio"), bool):
             raise VerifyError("single_provider_exposure entry lacks a numeric "
                               "exposure_ratio")
+        if x["exposure_ratio"] < 0:
+            raise VerifyError(
+                "single_provider_exposure exposure_ratio must be non-negative "
+                f"(got {x['exposure_ratio']})")
     _reject_duplicates("single_provider_exposure provider_id",
                        [x.get("provider_id")
                         for x in receipt["single_provider_exposure"]])
     _reject_duplicates("trust_domain_exposure trust_domain",
                        [d.get("trust_domain")
                         for d in receipt.get("trust_domain_exposure") or []])
+    # provider_ids in provider_events and single_provider_exposure must be the
+    # same set. A provider omitted from single_provider_exposure would be
+    # excluded from the recomputed max, so a malicious emitter could claim a
+    # lower max_single_provider_exposure than the true maximum.
+    event_ids = (
+        {e.get("provider_id") for e in receipt["provider_events"]} - {None}
+    )
+    exposure_ids = (
+        {x.get("provider_id") for x in receipt["single_provider_exposure"]}
+        - {None}
+    )
+    if event_ids != exposure_ids:
+        only_events = sorted(event_ids - exposure_ids)
+        only_exposure = sorted(exposure_ids - event_ids)
+        raise VerifyError(
+            "provider_events and single_provider_exposure have different "
+            f"provider_id sets; only in events: {only_events}, only in "
+            f"exposure: {only_exposure}")
 
 
 def _reject_duplicates(label: str, values: list) -> None:
@@ -330,6 +385,14 @@ def _check_provider_headline(receipt: dict) -> None:
         test; a ratio-only shortcut would false-reject a same-length,
         different-content payload. Making original_task_sha256 a required signed
         field in a future receipt version would let this run unconditionally.
+
+    Scope of the original_task_sha256 check: this establishes internal
+    consistency AMONG the signed receipt fields — that the emitter's own
+    payload hashes agree with its own no_single_provider_saw_full flag. It
+    does NOT prove the emitter supplied the true hash of the original task; a
+    colluding emitter controls both fields and can sign a receipt where both
+    lie in concert. Independent verification of the original input requires an
+    out-of-band reference hash held by the requester.
     """
     if receipt.get("trust_domain_exposure") is None \
             and "max_single_provider_exposure" in receipt:
