@@ -202,6 +202,18 @@ def _check_shape(receipt: dict) -> None:
     for h in receipt["local_only_hashes"]:
         if not _HEX64.match(str(h.get("sha256", ""))):
             raise VerifyError("local_only_hashes sha256 malformed")
+    # Every provider_events entry must carry a non-null provider_id; null is
+    # excluded from the set-equality check below (by design, to avoid
+    # crashing on malformed input), so a receipt where all entries have
+    # provider_id: null would pass the set check with an empty
+    # single_provider_exposure and a claimed max of 0.0. Reject null
+    # provider_ids explicitly so the exclusion never becomes a bypass.
+    for e in receipt["provider_events"]:
+        if e.get("provider_id") is None:
+            raise VerifyError("provider_events entry missing provider_id")
+    for x in receipt["single_provider_exposure"]:
+        if x.get("provider_id") is None:
+            raise VerifyError("single_provider_exposure entry missing provider_id")
     # Duplicates fail-close: dict aggregation downstream would silently
     # collapse repeated ids and let one seat's exposure hide behind another's.
     _reject_duplicates("provider_events provider_id",

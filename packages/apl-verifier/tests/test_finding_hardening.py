@@ -101,6 +101,53 @@ def test_saw_full_true_lie_caught_when_a_provider_saw_full():
         verify_receipt(r, _ANY_PEM)
 
 
+# --- Null provider_id bypass guard -------------------------------------------
+
+def _minimal_receipt(**overrides):
+    r = {
+        "run_id": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        "task_type": "test",
+        "policy_id": "p1",
+        "provider_events": [
+            {"provider_id": "pA", "payload_sha256": "a" * 64, "event_type": "mock"}
+        ],
+        "local_only_hashes": [],
+        "single_provider_exposure": [{"provider_id": "pA", "exposure_ratio": 0.5}],
+        "max_single_provider_exposure": 0.5,
+        "no_single_provider_saw_full": True,
+        "prev_receipt_hash": None,
+        "receipt_hash": "b" * 64,
+        "signature": {"alg": "Ed25519", "value": "AAAA"},
+        "signing_key_id": "k1",
+        "masking_level": "guided_curated_p0",
+        "provenance": {},
+    }
+    r.update(overrides)
+    return r
+
+
+def test_null_provider_id_in_events_is_rejected():
+    """provider_events entry with provider_id: null must be caught; without
+    an explicit null check the set-equality comparison collapses to {} == {}
+    and a receipt claiming max_exposure: 0.0 can pass with real exposure omitted."""
+    r = _minimal_receipt(
+        provider_events=[{"provider_id": None, "payload_sha256": "a" * 64,
+                          "event_type": "mock"}],
+        single_provider_exposure=[],
+        max_single_provider_exposure=0.0,
+    )
+    with pytest.raises(VerifyError, match="provider_id"):
+        verify_receipt(r, _ANY_PEM)
+
+
+def test_null_provider_id_in_exposure_is_rejected():
+    r = _minimal_receipt(
+        single_provider_exposure=[{"provider_id": None, "exposure_ratio": 0.5}],
+    )
+    with pytest.raises(VerifyError, match="provider_id"):
+        verify_receipt(r, _ANY_PEM)
+
+
 # --- Finding A: tamper vector is rejected specifically at parse boundary ------
 
 @pytest.mark.skipif(
