@@ -71,6 +71,14 @@ Field notes:
 - `no_single_provider_saw_full` — true iff no provider payload equals the
   full original input (canonical term; the legacy no-single-cloud underscore vocabulary
   must not appear anywhere -- CI-gated).
+- `original_task_sha256` (optional) — sha256 (lower-hex) over the UTF-8 bytes
+  of the original task text, after the same CRLF→LF normalization as
+  `payload_sha256`. When present, verifiers re-derive
+  `no_single_provider_saw_full` as
+  `not any(payload_sha256 == original_task_sha256)` and fail on mismatch.
+  Scope of that check: it proves the signed fields are internally consistent
+  with each other; it does NOT prove the emitter supplied the true hash of the
+  original task, which only the emitter saw.
 - `prev_receipt_hash` — previous receipt's `receipt_hash` (hex) or `null` for
   the first receipt of a chain.
 - `masking_level` — see docs/masking_levels.md; P0 emits `guided_curated_p0`.
