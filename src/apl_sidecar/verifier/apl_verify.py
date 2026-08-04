@@ -27,7 +27,8 @@ warnings.warn(
 
 # Make the independent package importable from a source checkout, then bridge
 # to it for the runtime-side key resolution the old API implied.
-_REPO = Path(__file__).resolve().parents[1]
+# Repo root from the src layout: src/apl_sidecar/verifier/ -> 3 levels up.
+_REPO = Path(__file__).resolve().parents[3]
 _PKG_SRC = _REPO / "packages" / "apl-verifier" / "src"
 if _PKG_SRC.is_dir() and str(_PKG_SRC) not in sys.path:
     sys.path.insert(0, str(_PKG_SRC))

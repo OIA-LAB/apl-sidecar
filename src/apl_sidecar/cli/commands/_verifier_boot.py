@@ -4,10 +4,11 @@
 The verification LAYER lives in the separately licensed `apl_verifier` package
 (Apache-2.0). The runtime depends on it one-way. This module:
 
-  1. makes `apl_verifier` importable from a source checkout (where the package
-     has not been pip-installed) by adding packages/apl-verifier/src to
-     sys.path as a fallback — an installed wheel finds it normally and this is
-     a no-op;
+  1. makes `apl_verifier` importable from a source checkout by adding
+     packages/apl-verifier/src to the front of sys.path, so a checkout always
+     runs against its own in-repo verifier (matching the root conftest.py)
+     even when an older apl-verifier wheel is installed; from an installed
+     wheel the directory does not exist and this is a no-op;
   2. keeps *key-location policy* on the runtime side (the user key dir and the
      packaged spec demo key), resolving a signing_key_id to a concrete PEM path
      and passing it explicitly into the pure verifier. The verifier package
@@ -21,7 +22,10 @@ from pathlib import Path
 
 from . import _resources
 
-_REPO = Path(__file__).resolve().parents[2]
+# Repo root from the src layout: src/apl_sidecar/cli/commands/ -> 4 levels up.
+# (The pre-src-layout depth of 2 pointed at src/apl_sidecar, so the shim never
+# fired and a checkout silently fell back to any installed wheel.)
+_REPO = Path(__file__).resolve().parents[4]
 _PKG_SRC = _REPO / "packages" / "apl-verifier" / "src"
 if _PKG_SRC.is_dir() and str(_PKG_SRC) not in sys.path:
     sys.path.insert(0, str(_PKG_SRC))
