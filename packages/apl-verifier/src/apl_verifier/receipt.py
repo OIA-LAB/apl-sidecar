@@ -157,6 +157,23 @@ def _reject_nonfinite_numbers(obj, path: str = "receipt") -> None:
             _reject_nonfinite_numbers(v, f"{path}[{i}]")
 
 
+def _is_hex64(value: object) -> bool:
+    """True only for a ``str`` that is exactly 64 lower-hex characters.
+
+    Enforcing the ``str`` type is the point. ``_HEX64.match(str(value))``
+    stringifies first, so a 64-digit *integer* renders to 64 digit-chars
+    and slips through -- a numeric ``original_task_sha256`` / ``receipt_hash``
+    would masquerade as a valid digest. A digest is textual; anything that is
+    not a ``str`` is malformed by construction.
+
+    ``fullmatch`` (not ``match``) closes a second gap: the ``$`` anchor in
+    ``_HEX64`` also matches immediately before a trailing newline, so
+    ``"<64hex>\\n"`` would otherwise pass. ``fullmatch`` requires the whole
+    string, newline included, to be hex.
+    """
+    return isinstance(value, str) and _HEX64.fullmatch(value) is not None
+
+
 def _check_shape(receipt: dict) -> None:
     _reject_nonfinite_numbers(receipt)
     missing = [f for f in REQUIRED_FIELDS if f not in receipt]
@@ -164,10 +181,10 @@ def _check_shape(receipt: dict) -> None:
         raise VerifyError(f"missing required fields: {', '.join(missing)}")
     if not _ULID.match(str(receipt["run_id"])):
         raise VerifyError("run_id is not a ULID")
-    if not _HEX64.match(str(receipt["receipt_hash"])):
+    if not _is_hex64(receipt["receipt_hash"]):
         raise VerifyError("receipt_hash is not 64 lower-hex chars")
     prev = receipt["prev_receipt_hash"]
-    if prev is not None and not _HEX64.match(str(prev)):
+    if prev is not None and not _is_hex64(prev):
         raise VerifyError("prev_receipt_hash is neither null nor 64 lower-hex")
     sig = receipt["signature"]
     if not isinstance(sig, dict) or sig.get("alg") != "Ed25519" or not sig.get("value"):
@@ -186,10 +203,10 @@ def _check_shape(receipt: dict) -> None:
         raise VerifyError(
             f"max_single_provider_exposure must be non-negative (got {msp})")
     orig_sha = receipt.get("original_task_sha256")
-    if orig_sha is not None and not _HEX64.match(str(orig_sha)):
+    if orig_sha is not None and not _is_hex64(orig_sha):
         raise VerifyError("original_task_sha256 must be 64 lower-hex chars")
     for ev in receipt["provider_events"]:
-        if not _HEX64.match(str(ev.get("payload_sha256", ""))):
+        if not _is_hex64(ev.get("payload_sha256")):
             raise VerifyError("provider_events payload_sha256 malformed")
         # completion (v0.2 additive) and the legacy boolean must agree.
         if "completion" in ev:
@@ -200,7 +217,7 @@ def _check_shape(receipt: dict) -> None:
                     ev["response_truncated"] != (ev["completion"] == "truncated"):
                 raise VerifyError("response_truncated contradicts completion")
     for h in receipt["local_only_hashes"]:
-        if not _HEX64.match(str(h.get("sha256", ""))):
+        if not _is_hex64(h.get("sha256")):
             raise VerifyError("local_only_hashes sha256 malformed")
     # Every provider_events entry must carry a non-null provider_id; null is
     # excluded from the set-equality check below (by design, to avoid

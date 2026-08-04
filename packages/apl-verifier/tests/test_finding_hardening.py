@@ -161,3 +161,70 @@ def test_nonfinite_tamper_vector_rejected_at_parse_boundary():
     raw = _NONFINITE_VECTOR.read_text(encoding="utf-8")
     with pytest.raises(ValueError, match="non-finite"):
         load_receipt_json(raw)
+
+
+# --- yc-oia PR #3 review 2: direct coverage for the shape-check guards --------
+#
+# Each guard below already exists in _check_shape; these lock the behaviour so a
+# later refactor cannot silently drop it. All run before the signature check, so
+# _ANY_PEM is never reached — the VerifyError is the whole assertion.
+
+def test_mismatched_provider_id_sets_rejected():
+    """A provider present in events but omitted from single_provider_exposure
+    would be excluded from the recomputed max; the set-equality check catches it."""
+    r = _minimal_receipt(
+        provider_events=[{"provider_id": "pA", "payload_sha256": "a" * 64,
+                          "event_type": "mock"}],
+        single_provider_exposure=[{"provider_id": "pB", "exposure_ratio": 0.5}],
+    )
+    with pytest.raises(VerifyError, match="different provider_id sets"):
+        verify_receipt(r, _ANY_PEM)
+
+
+def test_negative_provider_exposure_ratio_rejected():
+    r = _minimal_receipt(
+        single_provider_exposure=[{"provider_id": "pA", "exposure_ratio": -0.5}],
+    )
+    with pytest.raises(VerifyError, match="non-negative"):
+        verify_receipt(r, _ANY_PEM)
+
+
+@pytest.mark.parametrize("bad,msg", [
+    (True, "numeric"),          # bool is an int subclass — must not pass as numeric
+    (-0.1, "non-negative"),
+])
+def test_bad_max_single_provider_exposure_rejected(bad, msg):
+    r = _minimal_receipt(max_single_provider_exposure=bad)
+    with pytest.raises(VerifyError, match=msg):
+        verify_receipt(r, _ANY_PEM)
+
+
+@pytest.mark.parametrize("bad", [1, 0, "true"])
+def test_non_boolean_saw_full_rejected(bad):
+    """no_single_provider_saw_full must be a JSON boolean; an integer 1/0 or a
+    string must not be accepted as truthy."""
+    r = _minimal_receipt(no_single_provider_saw_full=bad)
+    with pytest.raises(VerifyError, match="must be a boolean"):
+        verify_receipt(r, _ANY_PEM)
+
+
+@pytest.mark.parametrize("bad", [
+    int("1" * 64),      # 64-digit integer: the exact str()-coercion bypass
+    "a" * 63,           # too short
+    "a" * 65,           # too long
+    "A" * 64,           # upper-hex is not lower-hex
+    "g" * 64,           # non-hex character
+    "a" * 64 + "\n",    # trailing newline slips past a bare `$` anchor
+])
+def test_invalid_original_task_sha256_rejected(bad):
+    r = _minimal_receipt(original_task_sha256=bad)
+    with pytest.raises(VerifyError, match="original_task_sha256"):
+        verify_receipt(r, _ANY_PEM)
+
+
+def test_integer_receipt_hash_rejected():
+    """The same str()-coercion bypass closed for original_task_sha256 also
+    applied to receipt_hash; a 64-digit integer must not masquerade as a digest."""
+    r = _minimal_receipt(receipt_hash=int("1" * 64))
+    with pytest.raises(VerifyError, match="receipt_hash"):
+        verify_receipt(r, _ANY_PEM)
