@@ -1,10 +1,8 @@
-<!-- LAWYER-REVIEW REQUIRED — not effective until reviewed -->
-
 # APL Sidecar Individual Contributor License Agreement
 
-_Draft, adapted from the Apache Software Foundation Individual Contributor
-License Agreement ("ICLA"), V2.2. This is a draft and is not effective until
-reviewed by a lawyer and signed by both parties._
+_Version 1.0 ("APL Sidecar ICLA v1.0"), effective 7 August 2026. Adapted from
+the Apache Software Foundation Individual Contributor License Agreement
+("ICLA"), V2.2._
 
 Thank you for your interest in APL Sidecar (the "Project"), offered by
 Yu-Chia Chang (張育嘉) (the "Licensor", "we", "us"). In order to clarify the
@@ -163,16 +161,17 @@ English.
 
 ---
 
-Signed:
+## Signing
 
-- Contributor name: ______________________________
-- GitHub username: ______________________________
-- Date: ______________________________
-- Signature: ______________________________
+This Agreement is signed electronically, per contributor, via the repository's
+CLA Assistant workflow. You sign by posting the following comment on your pull
+request:
 
-Signature and date will be evidenced by an independent time anchor — a CLA
-signing bot (e.g. CLA-assistant, recording the GitHub identity and signing
-time) or an independent trusted timestamp (RFC-3161 / OpenTimestamps) applied
-to the signed Agreement and its manifest — so that the content and time of
-signing can be shown reliably and are not established by a self-recomputable
-hash alone.
+> I have read the CLA Document and I hereby sign the CLA
+
+Doing so binds the GitHub account that posted the comment as of the date of
+that comment. Each signature is recorded in the repository's signature record
+(`.github/cla/signatures-v1.0.json`), which stores the GitHub username, the
+Agreement version, and the signing time. The bot's record is the independent
+time anchor for the signature: the identity and time of signing are evidenced
+by the CLA Assistant record, not by a self-recomputable hash alone.
