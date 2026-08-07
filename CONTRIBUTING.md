@@ -17,7 +17,10 @@ Keep demo data fictional and offline. Do not add credentials, telemetry, silent 
 ## Contributor License Agreement
 
 Code contributions require a signed individual CLA ([CLA.md](CLA.md)) before
-they can be merged. Until the CLA is signed, I will discuss a code PR in its
+they can be merged (APL Sidecar ICLA v1.0). Signing happens on your pull
+request: the CLA Assistant check prompts unsigned contributors, and you sign by
+posting the comment it specifies; signatures are recorded on the
+`cla-signatures` branch in `.github/cla/signatures-v1.0.json`. Until the CLA is signed, I will discuss a code PR in its
 Issue but will not merge it. This keeps the layered licensing in
 [LICENSING.md](LICENSING.md) coherent — including the automatic Apache-2.0
 conversion of each runtime release two years after its release date.
