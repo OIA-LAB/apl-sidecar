@@ -71,6 +71,14 @@ Field notes:
 - `no_single_provider_saw_full` — true iff no provider payload equals the
   full original input (canonical term; the legacy no-single-cloud underscore vocabulary
   must not appear anywhere -- CI-gated).
+- `original_task_sha256` (optional) — sha256 (lower-hex) over the UTF-8 bytes
+  of the original task text, after the same CRLF→LF normalization as
+  `payload_sha256`. When present, verifiers re-derive
+  `no_single_provider_saw_full` as
+  `not any(payload_sha256 == original_task_sha256)` and fail on mismatch.
+  Scope of that check: it proves the signed fields are internally consistent
+  with each other; it does NOT prove the emitter supplied the true hash of the
+  original task, which only the emitter saw.
 - `prev_receipt_hash` — previous receipt's `receipt_hash` (hex) or `null` for
   the first receipt of a chain.
 - `masking_level` — see docs/masking_levels.md; P0 emits `guided_curated_p0`.
@@ -89,7 +97,8 @@ pinned exactly here so that never happens silently:
 `apl-json-v1` is defined as:
 
 ```python
-json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+           allow_nan=False).encode("utf-8")
 ```
 
 - keys sorted at every level by Python string comparison, i.e. by Unicode
@@ -99,6 +108,14 @@ json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encod
   arise in practice, but the rule is code-point ordering, not JCS ordering);
 - no insignificant whitespace;
 - non-ASCII characters encoded as UTF-8 (not `\u` escapes);
+- **all numbers must be finite** — `NaN`, `Infinity`, `-Infinity` (bare JSON
+  tokens accepted by CPython's `json.loads` as an extension) and numeric
+  literals that overflow to a non-finite value when parsed (e.g. `1e400`)
+  are rejected at both parse time (`load_receipt_json`) and serialization time
+  (`allow_nan=False`). This matches RFC 8785, which forbids non-finite numbers,
+  and ensures every consistency check of the form `abs(claimed - recomputed) >
+  tol` is meaningful (all comparisons with NaN are False, so a NaN claimed
+  value silently passes any such check);
 - numbers are serialized by CPython's `json.dumps` shortest round-trip `repr`.
   This means **exponent notation is permitted where CPython emits it** (for
   example `round(1/1e6, 6)` serializes as `1e-06`, and large whole-number
@@ -117,6 +134,13 @@ in at least two independent ways: (1) number/float serialization (`1e-06` vs
 `0.000001`) and (2) object-key ordering (code point vs UTF-16 code unit) for
 astral characters. A stock RFC-8785 verifier is therefore not interchangeable
 with this rule.
+
+The finite-number restriction (`allow_nan=False`) aligns with RFC 8785 on that
+one point: both reject `NaN`, `Infinity`, `-Infinity`, and overflowing exponent
+values such as `1e400`. Agreement on the finite-number rule for the *current*
+finite, ASCII-key corpus does not establish general byte identity between
+`apl-json-v1` and RFC 8785 — the float-serialization and astral-key divergences
+above still apply.
 
 **Versioning / migration boundary.** `apl-json-v1` is the only canonicalization
 used by the receipts this document describes. Any future RFC 8785 (or other)
@@ -157,16 +181,17 @@ verification failure) breaks the chain at that index.
 `spec/conformance_vectors/valid_chain/` — two receipts forming a valid chain;
 both must verify, and the chain must verify.
 
-`spec/conformance_vectors/tamper_vectors/` — four receipts that MUST fail:
+`spec/conformance_vectors/tamper_vectors/` — five receipts that MUST fail:
 
-| Vector                          | Mutation                                  |
-| ------------------------------- | ------------------------------------------ |
-| `tamper_payload_changed.json`   | a `provider_events[].payload_sha256` byte  |
-| `tamper_provider_changed.json`  | a `provider_events[].provider_id` value    |
-| `tamper_prev_hash_changed.json` | `prev_receipt_hash`                        |
-| `tamper_signature_removed.json` | `signature` member removed                 |
+| Vector                             | Mutation / finding                              |
+| ---------------------------------- | ----------------------------------------------- |
+| `tamper_payload_changed.json`      | a `provider_events[].payload_sha256` byte       |
+| `tamper_provider_changed.json`     | a `provider_events[].provider_id` value         |
+| `tamper_prev_hash_changed.json`    | `prev_receipt_hash`                             |
+| `tamper_signature_removed.json`    | `signature` member removed                      |
+| `tamper_nonfinite_exposure.json`   | `max_single_provider_exposure: NaN` (non-finite number) |
 
-A conforming implementation accepts both valid vectors and rejects all four
+A conforming implementation accepts both valid vectors and rejects all five
 tamper vectors. `tests/test_tamper_vectors.py` enforces this in CI.
 
 ## 6. v0.2 additive fields (N-way / live runs)
