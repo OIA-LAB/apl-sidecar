@@ -63,8 +63,9 @@ Apache-2.0 Future License are two independent grants; terminating the first does
 not reach the second.
 
 **Can I contribute code now? Is the CLA final?**
-The CLA is currently under legal review; code contributions are not accepted
-until review completes.
+The CLA is final: code contributions are accepted under the
+APL Sidecar ICLA v1.0 ([CLA.md](CLA.md)). The CLA check on your pull request
+will prompt you to sign; it turns green once you have signed.
 
 **Why does PyPI show the license as `LicenseRef-FSL-1.1-ALv2`?**
 The runtime license is FSL-1.1-ALv2 (full text in [LICENSE](LICENSE)). The PyPI
